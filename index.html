@@ -1,244 +1,240 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SUBQ SOCIETY – Peptide Calculator</title>
-  <link rel="stylesheet" href="styles.css">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Peptide Calculator</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
   <style>
-    body {
-      background: #111;
-      font-family: Arial, Helvetica, sans-serif;
-      color: #fff;
-      margin: 0;
-      padding: 0;
-    }
+    :root{ --bg:#0f0f12;--card:#15161a;--ink:#e7e7ea;--muted:#9aa0ab;--accent:#7c5cff;--accent-2:#25d0a6;--error:#ff6b6b; }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:radial-gradient(1100px 700px at 100% -50%, #1b1c22 30%, #0f0f12 70%),var(--bg);color:var(--ink)}
+    .wrap{max-width:1080px;margin:auto;padding:24px}
+    header{display:flex;gap:14px;align-items:center;justify-content:space-between;margin-bottom:18px}
+    .brand{display:flex;gap:12px;align-items:center}
+    .logo{width:46px;height:46px;border-radius:8px;overflow:hidden;display:flex;align-items:center;justify-content:center;background:#0d0e12;border:1px solid #2a2c33}
+    .logo img{width:100%;height:100%;object-fit:contain;display:block}
+    h1{font-size:clamp(22px,3vw,32px);margin:0;font-weight:800;letter-spacing:-0.02em}
+    .card{background:linear-gradient(180deg, #1a1b21, #131419);border:1px solid #23242b;box-shadow:0 10px 30px rgba(0,0,0,.25), inset 0 1px 0 rgba(255,255,255,.03);border-radius:16px;padding:18px}
+    .grid{display:grid;grid-template-columns:1fr;gap:16px}
+    @media(min-width:900px){.grid{grid-template-columns:1.1fr .9fr}}
+    label{display:block;font-size:12px;color:var(--muted);margin-bottom:6px}
+    .row{display:grid;grid-template-columns:repeat(12,1fr);gap:10px}
+    .field{grid-column:span 6}
+    .field.sm{grid-column:span 4}
+    .input{width:100%;background:#0d0e12;color:var(--ink);border:1px solid #2a2c33;border-radius:12px;padding:12px 14px;font-size:15px;outline:2px solid transparent;outline-offset:2px;transition:border .15s ease, outline .15s ease}
+    .input:focus{border-color:#5c6ae6;outline-color:#3d44a3}
+    .btns{display:flex;flex-wrap:wrap;gap:10px}
+    button.pill{background:#0d0e12;border:1px solid #2a2c33;color:var(--ink);padding:10px 14px;border-radius:999px;cursor:pointer;font-weight:600}
+    button.pill[aria-pressed="true"],button.pill:hover{border-color:#4d8cff;background:#111424}
+    .muted{color:var(--muted)}
+    .big{font-size:clamp(18px,3vw,24px);font-weight:800}
 
-    /* Hero banner image at top */
-    .hero {
-      max-width: 100%;
-      height: auto;
-      display: block;
-      margin: 0 auto 12px auto; /* small bottom space now */
-    }
+    /* Syringe visual */
+    .syringe{background:#0c0d11;border:1px solid #272930;border-radius:14px;padding:18px}
+    .syringe h3{margin:0 0 10px 0;font-size:18px}
+    .tube{position:relative;height:36px;border-radius:18px;background:linear-gradient(180deg,#11131a,#0b0c10);border:1px solid #2a2c33;box-shadow:inset 0 2px 8px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.05)}
+    .fill{position:absolute;left:0;top:0;bottom:0;width:0%;background:linear-gradient(90deg, var(--accent), #5b9dff);border-radius:18px;box-shadow:inset 0 0 12px rgba(255,255,255,.25), 0 0 16px rgba(124,92,255,.45)}
+    .cap{position:absolute;left:-8px;top:50%;translate:0 -50%;width:18px;height:18px;border-radius:50%;background:linear-gradient(180deg,#4e556a,#262a33);border:1px solid #6b7388}
+    .ticks{position:relative;display:flex;justify-content:space-between;align-items:flex-start;margin-top:10px;padding:0 2px}
+    .tick{position:relative;width:1px;background:#3a3d47}
+    .tick.minor{height:10px;opacity:.55}
+    .tick.major{height:16px}
+    .tick .n{position:absolute;top:18px;left:50%;transform:translateX(-50%);font-size:12px;color:var(--muted)}
+    .cursor{position:absolute;top:-8px;width:2px;background:var(--accent-2);height:52px;border-radius:2px;box-shadow:0 0 0 2px rgba(37,208,166,.15)}
 
-    header {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin: 0 auto 20px auto;
-      width: 90%;
-      max-width: 900px;
-    }
-
-    .logo {
-      width: 60px;
-      height: 60px;
-      flex-shrink: 0;
-    }
-
-    .logo img {
-      width: 100%;
-      height: 100%;
-      object-fit: contain;
-      display: block;
-    }
-
-    header h1 {
-      font-size: 1.8rem;
-      font-weight: bold;
-      margin: 0;
-    }
-
-    .wrap {
-      width: 90%;
-      max-width: 900px;
-      margin: 0 auto;
-    }
-
-    .card {
-      background: #1b1b1b;
-      border-radius: 12px;
-      padding: 20px;
-      margin-bottom: 20px;
-    }
-
-    h2 {
-      margin-top: 0;
-    }
-
-    .quick-select button {
-      background: #222;
-      color: #fff;
-      border: 1px solid #333;
-      border-radius: 50px;
-      padding: 5px 12px;
-      margin: 5px;
-      cursor: pointer;
-    }
-
-    .quick-select button.active {
-      background: #4a4aff;
-    }
-
-    .visual-aid {
-      background: #1b1b1b;
-      border-radius: 12px;
-      padding: 20px;
-    }
-
-    .slider-container {
-      position: relative;
-      margin-top: 10px;
-      margin-bottom: 20px;
-    }
-
-    .slider {
-      width: 100%;
-    }
-
-    .info-boxes {
-      display: flex;
-      gap: 20px;
-      flex-wrap: wrap;
-    }
-
-    .info-box {
-      flex: 1 1 150px;
-      background: #111;
-      border-radius: 10px;
-      padding: 10px;
-      text-align: center;
-    }
-
-    .info-box strong {
-      display: block;
-      font-size: 1.5rem;
-    }
-
-    .disclaimer {
-      font-size: 0.8rem;
-      opacity: 0.7;
-      margin-top: 8px;
-    }
+    .note{font-size:13px;color:var(--muted)}
+    .result{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:26px}
+    .chip{background:#0c0d11;border:1px solid #2a2c33;border-radius:12px;padding:10px 12px}
+    .chip .k{color:var(--muted);font-size:12px}
+    .chip .v{font-weight:800;font-size:18px}
+    .warn{color:var(--error);font-weight:700}
+    footer{margin-top:26px;color:var(--muted);font-size:12px}
+    a{color:#8fb6ff}
   </style>
 </head>
 <body>
-  <!-- Large SUBQ SOCIETY banner at top -->
-  <img src="IMG_20250926_184644.png"
-       alt="SUBQ SOCIETY – THE UNDERGROUND PROTOCOL"
-       class="hero">
+  <!-- Large SUBQ Society banner at top (original spacing) -->
+  <img src="IMG_20250926_184644.png" alt="SUBQ SOCIETY – THE UNDERGROUND PROTOCOL" style="max-width:100%;height:auto;display:block;margin:0 auto 24px auto;">
 
   <div class="wrap">
     <header>
-      <div class="logo">
-        <img src="IMG_20250926_184642.png" alt="Snake syringe logo">
+      <div class="brand">
+        <div class="logo">
+          <img src="IMG_20250926_184642.png" alt="Snake syringe logo" />
+        </div>
+        <h1>Peptide Calculator</h1>
       </div>
-      <h1>Peptide Calculator</h1>
     </header>
 
-    <div class="card">
-      <h2>Setup</h2>
-      <label>
-        Peptide per vial (mg)
-        <input type="number" id="peptidePerVial" value="5">
-      </label>
-      <label>
-        Diluent added (mL)
-        <input type="number" id="diluentAdded" value="2">
-      </label>
-      <label>
-        Syringe size (units scale)
-        <select id="syringeSize">
-          <option value="30">30-unit (short)</option>
-          <option value="50">50-unit</option>
-          <option value="100">100-unit</option>
-        </select>
-      </label>
-      <label>
-        Desired dose (mcg)
-        <input type="number" id="desiredDose" value="50">
-      </label>
-
-      <div class="quick-select">
-        <button data-dose="50">50 mcg</button>
-        <button data-dose="100">100 mcg</button>
-        <button data-dose="250">250 mcg</button>
-        <button data-dose="500">500 mcg</button>
-      </div>
-
-      <p>Assumes a U-100 insulin syringe where <strong>1 unit = 0.01 mL</strong>. Calculations update as you type.</p>
-    </div>
-
-    <div class="visual-aid">
-      <h2>Visual Aid</h2>
-      <p id="doseText">To have a dose of 50 mcg pull the syringe to 2 units</p>
-
-      <div class="slider-container">
-        <input type="range" id="syringeSlider" class="slider" min="0" max="30" value="2">
-      </div>
-
-      <div class="info-boxes">
-        <div class="info-box">
-          <span>Units to pull</span>
-          <strong id="unitsPull">2</strong>
-          <small id="mlPull">≈ 0.020 mL</small>
+    <div class="grid">
+      <!-- LEFT: Inputs -->
+      <section class="card" aria-labelledby="inputsTitle">
+        <h2 id="inputsTitle" class="big" style="margin:6px 0 12px">Setup</h2>
+        <div class="row">
+          <div class="field sm">
+            <label for="vialMg">Peptide per vial (mg)</label>
+            <input id="vialMg" class="input" type="number" step="0.1" value="5" />
+          </div>
+          <div class="field sm">
+            <label for="diluentMl">Diluent added (mL)</label>
+            <input id="diluentMl" class="input" type="number" step="0.1" value="2" />
+          </div>
+          <div class="field sm">
+            <label for="syrSize">Syringe size (units scale)</label>
+            <select id="syrSize" class="input">
+              <option value="30" selected>30‑unit (short)</option>
+              <option value="50">50‑unit</option>
+              <option value="100">100‑unit</option>
+            </select>
+          </div>
+          <div class="field sm">
+            <label for="doseMcg">Desired dose (mcg)</label>
+            <input id="doseMcg" class="input" type="number" step="1" min="0" value="50" />
+          </div>
         </div>
-        <div class="info-box">
-          <span>Potency</span>
-          <strong id="potencyPerUnit">25</strong>
-          <small>mcg per unit</small>
-        </div>
-      </div>
 
-      <p class="disclaimer">This calculator is for educational use only. Not medical advice.</p>
+        <div style="margin-top:10px">
+          <label>Quick select dose</label>
+          <div class="btns" role="group" aria-label="Preset doses">
+            <button class="pill preset" data-dose="50" aria-pressed="true">50 mcg</button>
+            <button class="pill preset" data-dose="100">100 mcg</button>
+            <button class="pill preset" data-dose="250">250 mcg</button>
+            <button class="pill preset" data-dose="500">500 mcg</button>
+          </div>
+        </div>
+
+        <p class="note" style="margin-top:10px">Assumes a U‑100 insulin syringe where <strong>1 unit = 0.01 mL</strong>. Calculations update as you type.</p>
+      </section>
+
+      <!-- RIGHT: Syringe / Results -->
+      <section class="card" aria-labelledby="visTitle">
+        <h2 id="visTitle" class="big" style="margin:6px 0 12px">Visual Aid</h2>
+
+        <div class="syringe" aria-live="polite">
+          <h3 id="doseText">To have a dose of <span id="doseOut">50</span> mcg pull the syringe to <span id="unitsOut">1.0</span> <span id="unitWord">unit</span></h3>
+          <div class="tube" id="tube">
+            <div class="fill" id="fill"></div>
+            <div class="cap" aria-hidden="true"></div>
+            <div class="cursor" id="cursor" aria-hidden="true"></div>
+          </div>
+          <div class="ticks" id="ticks" aria-hidden="true"></div>
+
+          <div class="result">
+            <div class="chip">
+              <div class="k">Units to pull</div>
+              <div class="v" id="unitsOutChip">—</div>
+              <div class="k" style="margin-top:4px">≈ <span id="mlOut">—</span></div>
+            </div>
+            <div class="chip">
+              <div class="k">Potency</div>
+              <div class="v" id="mcgPerUnit">—</div>
+              <div class="k">mcg per unit</div>
+            </div>
+          </div>
+          <p id="warn" class="note" style="margin-top:8px"></p>
+        </div>
+
+        <footer>
+          <p class="note">This calculator is for educational use only. Not medical advice.</p>
+        </footer>
+      </section>
     </div>
   </div>
 
   <script>
-    const peptidePerVial = document.getElementById('peptidePerVial');
-    const diluentAdded = document.getElementById('diluentAdded');
-    const syringeSize = document.getElementById('syringeSize');
-    const desiredDose = document.getElementById('desiredDose');
-    const doseText = document.getElementById('doseText');
-    const syringeSlider = document.getElementById('syringeSlider');
-    const unitsPull = document.getElementById('unitsPull');
-    const mlPull = document.getElementById('mlPull');
-    const potencyPerUnit = document.getElementById('potencyPerUnit');
+    document.addEventListener('DOMContentLoaded', () => {
+      const $id = (s)=>document.getElementById(s);
+      const vialMg = $id('vialMg');
+      const diluentMl = $id('diluentMl');
+      const doseMcg = $id('doseMcg');
+      const syrSize = $id('syrSize');
 
-    document.querySelectorAll('.quick-select button').forEach(btn => {
-      btn.addEventListener('click', () => {
-        desiredDose.value = btn.dataset.dose;
-        updateCalc();
+      const doseOut = $id('doseOut');
+      const unitsOut = $id('unitsOut');
+      const unitWord = $id('unitWord');
+      const mlOut = $id('mlOut');
+      const mcgPerUnit = $id('mcgPerUnit');
+      const unitsOutChip = $id('unitsOutChip');
+      const ticks = $id('ticks');
+      const fill = $id('fill');
+      const cursor = $id('cursor');
+      const warnEl = $id('warn');
+
+      const clamp=(n,min,max)=>Math.min(max,Math.max(min,n));
+      const fmt=(n,d=2)=>Number.isFinite(n)?n.toFixed(d).replace(/\.0+$/,'').replace(/(\.[1-9]*)0+$/,'$1'):'—';
+
+      function buildTicks(){
+        ticks.innerHTML='';
+        const max=parseInt(syrSize.value,10)||30;
+        const minorStep=(max<=30?1:5);
+        const majorStep=(max<=30?5:10);
+        for(let i=0;i<=max;i+=minorStep){
+          const t=document.createElement('div');
+          t.className='tick '+(i%majorStep===0?'major':'minor');
+          if(i%majorStep===0){
+            const n=document.createElement('div'); n.className='n'; n.textContent=String(i); t.appendChild(n);
+          }
+          ticks.appendChild(t);
+        }
+      }
+
+      function recalc(){
+        const mg=parseFloat(vialMg.value);
+        const ml=parseFloat(diluentMl.value);
+        const dose=parseFloat(doseMcg.value);
+        const maxUnits=parseInt(syrSize.value,10)||30;
+
+        const conc=(mg>0&&ml>0)?(mg/ml):NaN; // mg per mL
+        const mcgPerU=Number.isFinite(conc)?conc*10:NaN; // mcg per U
+        const units=Number.isFinite(mcgPerU)&&dose>0?dose/mcgPerU:NaN;
+        const mlToPull=Number.isFinite(units)?units*0.01:NaN;
+
+        doseOut.textContent=fmt(dose,0);
+        mcgPerUnit.textContent=Number.isFinite(mcgPerU)?fmt(mcgPerU,2):'—';
+        unitsOut.textContent=fmt(units,2);
+        unitsOutChip.textContent=Number.isFinite(units)?fmt(units,2):'—';
+        mlOut.textContent=Number.isFinite(mlToPull)?`${fmt(mlToPull,3)} mL`:'—';
+        if(Number.isFinite(units)) unitWord.textContent=Math.abs(units-1)<0.005?'unit':'units';
+
+        const pct=Number.isFinite(units)?clamp(units/maxUnits*100,0,100):0;
+        fill.style.width=pct+'%';
+        cursor.style.left=`calc(${pct}% - 1px)`;
+
+        warnEl.textContent=''; warnEl.classList.remove('warn');
+        if(!Number.isFinite(units)){
+          warnEl.textContent='Enter positive values for vial mg, diluent mL, and dose.';
+        } else if(units>maxUnits){
+          warnEl.textContent=`⚠️ Dose exceeds the selected syringe scale of ${maxUnits} units.`; warnEl.classList.add('warn');
+        }
+      }
+
+      document.querySelectorAll('.preset').forEach(btn=>{
+        btn.addEventListener('click',()=>{
+          document.querySelectorAll('.preset').forEach(b=>b.setAttribute('aria-pressed','false'));
+          btn.setAttribute('aria-pressed','true');
+          doseMcg.value=btn.getAttribute('data-dose')||doseMcg.value;
+          recalc();
+        });
       });
+
+      ['input','change'].forEach(evt=>{
+        [vialMg,diluentMl,doseMcg,syrSize].forEach(el=>{
+          el.addEventListener(evt,()=>{
+            if(el!==doseMcg){
+              document.querySelectorAll('.preset').forEach(b=>b.setAttribute('aria-pressed','false'));
+            }
+            recalc();
+            if(el===syrSize) buildTicks();
+          });
+        });
+      });
+
+      buildTicks();
+      recalc();
     });
-
-    [peptidePerVial, diluentAdded, syringeSize, desiredDose].forEach(el => {
-      el.addEventListener('input', updateCalc);
-    });
-
-    function updateCalc() {
-      const peptideMg = parseFloat(peptidePerVial.value) || 0;
-      const diluentMl = parseFloat(diluentAdded.value) || 0;
-      const doseMcg = parseFloat(desiredDose.value) || 0;
-
-      const totalMcg = peptideMg * 1000;
-      const mcgPerMl = totalMcg / diluentMl;
-      const mcgPerUnit = mcgPerMl * 0.01; // U-100
-
-      const units = doseMcg / mcgPerUnit;
-      const mL = units * 0.01;
-
-      syringeSlider.max = syringeSize.value;
-      syringeSlider.value = units;
-
-      doseText.textContent = `To have a dose of ${doseMcg} mcg pull the syringe to ${units.toFixed(0)} units`;
-      unitsPull.textContent = units.toFixed(0);
-      mlPull.textContent = `≈ ${mL.toFixed(3)} mL`;
-      potencyPerUnit.textContent = mcgPerUnit.toFixed(0);
-    }
-
-    updateCalc();
   </script>
 </body>
 </html>
