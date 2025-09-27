@@ -4,27 +4,21 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Peptide Calculator</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
   <style>
-    :root {
-      --bg:#0f0f12; --card:#15161a; --ink:#e7e7ea; --muted:#9aa0ab;
-      --accent:#7c5cff; --accent-2:#25d0a6; --error:#ff6b6b;
+    :root{
+      --bg:#0f0f12;--card:#15161a;--ink:#e7e7ea;--muted:#9aa0ab;--accent:#7c5cff;--accent-2:#25d0a6;--error:#ff6b6b;
     }
-    * {box-sizing:border-box}
-    body {
-      margin:0;
-      font-family:Inter,system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
-      background:radial-gradient(1100px 700px at 100% -50%, #1b1c22 30%, #0f0f12 70%),var(--bg);
-      color:var(--ink);
-    }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:radial-gradient(1100px 700px at 100% -50%, #1b1c22 30%, #0f0f12 70%),var(--bg);color:var(--ink)}
     .wrap{max-width:1080px;margin:auto;padding:24px}
-
-    /* Header styles */
-    .brand{display:flex;gap:12px;align-items:center;margin-bottom:18px}
+    header{display:flex;gap:14px;align-items:center;justify-content:space-between;margin-bottom:18px}
+    .brand{display:flex;gap:12px;align-items:center}
     .logo{width:46px;height:46px;border-radius:8px;overflow:hidden;display:flex;align-items:center;justify-content:center;background:#0d0e12;border:1px solid #2a2c33}
-    .logo img{width:100%;height:auto;display:block}
+    .logo img{width:100%;height:100%;object-fit:contain;display:block}
     h1{font-size:clamp(22px,3vw,32px);margin:0;font-weight:800;letter-spacing:-0.02em}
-
     .card{background:linear-gradient(180deg, #1a1b21, #131419);border:1px solid #23242b;box-shadow:0 10px 30px rgba(0,0,0,.25), inset 0 1px 0 rgba(255,255,255,.03);border-radius:16px;padding:18px}
     .grid{display:grid;grid-template-columns:1fr;gap:16px}
     @media(min-width:900px){.grid{grid-template-columns:1.1fr .9fr}}
@@ -32,7 +26,8 @@
     .row{display:grid;grid-template-columns:repeat(12,1fr);gap:10px}
     .field{grid-column:span 6}
     .field.sm{grid-column:span 4}
-    .input{width:100%;background:#0d0e12;color:var(--ink);border:1px solid #2a2c33;border-radius:12px;padding:12px 14px;font-size:15px}
+    .input{width:100%;background:#0d0e12;color:var(--ink);border:1px solid #2a2c33;border-radius:12px;padding:12px 14px;font-size:15px;outline:2px solid transparent;outline-offset:2px;transition:border .15s ease, outline .15s ease}
+    .input:focus{border-color:#5c6ae6;outline-color:#3d44a3}
     .btns{display:flex;flex-wrap:wrap;gap:10px}
     button.pill{background:#0d0e12;border:1px solid #2a2c33;color:var(--ink);padding:10px 14px;border-radius:999px;cursor:pointer;font-weight:600}
     button.pill[aria-pressed="true"],button.pill:hover{border-color:#4d8cff;background:#111424}
@@ -53,19 +48,19 @@
     .cursor{position:absolute;top:-8px;width:2px;background:var(--accent-2);height:52px;border-radius:2px;box-shadow:0 0 0 2px rgba(37,208,166,.15)}
 
     .note{font-size:13px;color:var(--muted)}
-    .result{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:26px}
+    .result{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:26px} /* increased margin-top to push boxes lower */
     .chip{background:#0c0d11;border:1px solid #2a2c33;border-radius:12px;padding:10px 12px}
     .chip .k{color:var(--muted);font-size:12px}
     .chip .v{font-weight:800;font-size:18px}
     .warn{color:var(--error);font-weight:700}
     footer{margin-top:26px;color:var(--muted);font-size:12px}
+    a{color:#8fb6ff}
   </style>
 </head>
 <body>
   <!-- Large SUBQ Society banner at top -->
   <img src="IMG_20250926_184644.png" alt="SUBQ SOCIETY – THE UNDERGROUND PROTOCOL"
        style="max-width:100%;height:auto;display:block;margin:0 auto 24px auto;">
-
   <div class="wrap">
     <header>
       <div class="brand">
@@ -77,6 +72,7 @@
     </header>
 
     <div class="grid">
+      <!-- LEFT: Inputs -->
       <section class="card" aria-labelledby="inputsTitle">
         <h2 id="inputsTitle" class="big" style="margin:6px 0 12px">Setup</h2>
         <div class="row">
@@ -91,9 +87,9 @@
           <div class="field sm">
             <label for="syrSize">Syringe size (units scale)</label>
             <select id="syrSize" class="input">
-              <option value="30" selected>30-unit (short)</option>
-              <option value="50">50-unit</option>
-              <option value="100">100-unit</option>
+              <option value="30" selected>30‑unit (short)</option>
+              <option value="50">50‑unit</option>
+              <option value="100">100‑unit</option>
             </select>
           </div>
           <div class="field sm">
@@ -112,12 +108,14 @@
           </div>
         </div>
 
-        <p class="note" style="margin-top:10px">Assumes a U-100 insulin syringe where <strong>1 unit = 0.01 mL</strong>. Calculations update as you type.</p>
+        <p class="note" style="margin-top:10px">Assumes a U‑100 insulin syringe where <strong>1 unit = 0.01 mL</strong>. Calculations update as you type.</p>
       </section>
 
+      <!-- RIGHT: Syringe / Results -->
       <section class="card" aria-labelledby="visTitle">
         <h2 id="visTitle" class="big" style="margin:6px 0 12px">Visual Aid</h2>
 
+        <!-- Standard bar-style visual (pre-SVG) -->
         <div class="syringe" aria-live="polite">
           <h3 id="doseText">To have a dose of <span id="doseOut">50</span> mcg pull the syringe to <span id="unitsOut">1.0</span> <span id="unitWord">unit</span></h3>
           <div class="tube" id="tube">
@@ -126,7 +124,6 @@
             <div class="cursor" id="cursor" aria-hidden="true"></div>
           </div>
           <div class="ticks" id="ticks" aria-hidden="true"></div>
-
           <div class="result">
             <div class="chip">
               <div class="k">Units to pull</div>
@@ -149,96 +146,101 @@
     </div>
   </div>
 
+  <!-- Script unchanged -->
   <script>
-    const $id = (s)=>document.getElementById(s);
-    const vialMg = $id('vialMg');
-    const diluentMl = $id('diluentMl');
-    const doseMcg = $id('doseMcg');
-    const syrSize = $id('syrSize');
+    document.addEventListener('DOMContentLoaded', () => {
+      const $id = (s)=>document.getElementById(s);
+      const vialMg = $id('vialMg');
+      const diluentMl = $id('diluentMl');
+      const doseMcg = $id('doseMcg');
+      const syrSize = $id('syrSize');
 
-    const doseOut = $id('doseOut');
-    const unitsOut = $id('unitsOut');
-    const unitWord = $id('unitWord');
-    const mlOut = $id('mlOut');
-    const mcgPerUnit = $id('mcgPerUnit');
-    const unitsOutChip = $id('unitsOutChip');
-    const ticks = $id('ticks');
-    const tube = $id('tube');
-    const fill = $id('fill');
-    const cursor = $id('cursor');
-    const warnEl = $id('warn');
+      const doseOut = $id('doseOut');
+      const unitsOut = $id('unitsOut');
+      const unitWord = $id('unitWord');
+      const mlOut = $id('mlOut');
+      const mcgPerUnit = $id('mcgPerUnit');
+      const unitsOutChip = $id('unitsOutChip');
+      const ticks = $id('ticks');
+      const tube = $id('tube');
+      const fill = $id('fill');
+      const cursor = $id('cursor');
+      const warnEl = $id('warn');
 
-    const clamp=(n,min,max)=>Math.min(max,Math.max(min,n));
-    const fmt=(n,d=2)=>Number.isFinite(n)?n.toFixed(d).replace(/\\.0+$/,'').replace(/(\\.[1-9]*)0+$/,'$1'):'—';
+      const clamp=(n,min,max)=>Math.min(max,Math.max(min,n));
+      const fmt=(n,d=2)=>Number.isFinite(n)?n.toFixed(d).replace(/\.0+$/,'').replace(/(\.[1-9]*)0+$/,'$1'):'—';
 
-    function buildTicks(){
-      ticks.innerHTML='';
-      const max=parseInt(syrSize.value,10)||30;
-      const minorStep=(max<=30?1:5);
-      const majorStep=(max<=30?5:10);
-      for(let i=0;i<=max;i+=minorStep){
-        const t=document.createElement('div');
-        t.className='tick '+(i%majorStep===0?'major':'minor');
-        if(i%majorStep===0){
-          const n=document.createElement('div'); n.className='n'; n.textContent=String(i); t.appendChild(n);
-        }
-        ticks.appendChild(t);
-      }
-    }
-
-    function recalc(){
-      const mg=parseFloat(vialMg.value);
-      const ml=parseFloat(diluentMl.value);
-      const dose=parseFloat(doseMcg.value);
-      const maxUnits=parseInt(syrSize.value,10)||30;
-
-      const conc=(mg>0&&ml>0)?(mg/ml):NaN; // mg per mL
-      const mcgPerU=Number.isFinite(conc)?conc*10:NaN; // mcg per U
-      const units=Number.isFinite(mcgPerU)&&dose>0?dose/mcgPerU:NaN;
-      const mlToPull=Number.isFinite(units)?units*0.01:NaN;
-
-      doseOut.textContent=fmt(dose,0);
-      mcgPerUnit.textContent=Number.isFinite(mcgPerU)?fmt(mcgPerU,2):'—';
-      unitsOut.textContent=fmt(units,2);
-      unitsOutChip.textContent=Number.isFinite(units)?fmt(units,2):'—';
-      mlOut.textContent=Number.isFinite(mlToPull)?`${fmt(mlToPull,3)} mL`:'—';
-      if(Number.isFinite(units)) unitWord.textContent=Math.abs(units-1)<0.005?'unit':'units';
-
-      const pct=Number.isFinite(units)?clamp(units/maxUnits*100,0,100):0;
-      fill.style.width=pct+'%';
-      cursor.style.left=`calc(${pct}% - 1px)`;
-
-      warnEl.textContent=''; warnEl.classList.remove('warn');
-      if(!Number.isFinite(units)){
-        warnEl.textContent='Enter positive values for vial mg, diluent mL, and dose.';
-      } else if(units>maxUnits){
-        warnEl.textContent=`⚠️ Dose exceeds the selected syringe scale of ${maxUnits} units.`; warnEl.classList.add('warn');
-      }
-    }
-
-    document.querySelectorAll('.preset').forEach(btn=>{
-      btn.addEventListener('click',()=>{
-        document.querySelectorAll('.preset').forEach(b=>b.setAttribute('aria-pressed','false'));
-        btn.setAttribute('aria-pressed','true');
-        doseMcg.value=btn.getAttribute('data-dose')||doseMcg.value;
-        recalc();
-      });
-    });
-
-    ['input','change'].forEach(evt=>{
-      [vialMg,diluentMl,doseMcg,syrSize].forEach(el=>{
-        el.addEventListener(evt,()=>{
-          if(el!==doseMcg){
-            document.querySelectorAll('.preset').forEach(b=>b.setAttribute('aria-pressed','false'));
+      function buildTicks(){
+        ticks.innerHTML='';
+        const max=parseInt(syrSize.value,10)||30;
+        const minorStep=(max<=30?1:5);
+        const majorStep=(max<=30?5:10);
+        for(let i=0;i<=max;i+=minorStep){
+          const t=document.createElement('div');
+          t.className='tick '+(i%majorStep===0?'major':'minor');
+          if(i%majorStep===0){
+            const n=document.createElement('div'); n.className='n'; n.textContent=String(i); t.appendChild(n);
           }
+          ticks.appendChild(t);
+        }
+      }
+
+      function recalc(){
+        const mg=parseFloat(vialMg.value);
+        const ml=parseFloat(diluentMl.value);
+        const dose=parseFloat(doseMcg.value);
+        const maxUnits=parseInt(syrSize.value,10)||30;
+
+        const conc=(mg>0&&ml>0)?(mg/ml):NaN; // mg per mL
+        const mcgPerU=Number.isFinite(conc)?conc*10:NaN; // mcg per U
+        const units=Number.isFinite(mcgPerU)&&dose>0?dose/mcgPerU:NaN;
+        const mlToPull=Number.isFinite(units)?units*0.01:NaN;
+
+        doseOut.textContent=fmt(dose,0);
+        mcgPerUnit.textContent=Number.isFinite(mcgPerU)?fmt(mcgPerU,2):'—';
+        unitsOut.textContent=fmt(units,2);
+        unitsOutChip.textContent=Number.isFinite(units)?fmt(units,2):'—';
+        mlOut.textContent=Number.isFinite(mlToPull)?`${fmt(mlToPull,3)} mL`:'—';
+        if(Number.isFinite(units)){
+          unitWord.textContent=Math.abs(units-1)<0.005?'unit':'units';
+        }
+
+        const pct=Number.isFinite(units)?clamp(units/maxUnits*100,0,100):0;
+        fill.style.width=pct+'%';
+        cursor.style.left=`calc(${pct}% - 1px)`;
+
+        warnEl.textContent=''; warnEl.classList.remove('warn');
+        if(!Number.isFinite(units)){
+          warnEl.textContent='Enter positive values for vial mg, diluent mL, and dose.';
+        } else if(units>maxUnits){
+          warnEl.textContent=`⚠️ Dose exceeds the selected syringe scale of ${maxUnits} units.`; warnEl.classList.add('warn');
+        }
+      }
+
+      document.querySelectorAll('.preset').forEach(btn=>{
+        btn.addEventListener('click',()=>{
+          document.querySelectorAll('.preset').forEach(b=>b.setAttribute('aria-pressed','false'));
+          btn.setAttribute('aria-pressed','true');
+          doseMcg.value=btn.getAttribute('data-dose')||doseMcg.value;
           recalc();
-          if(el===syrSize) buildTicks();
         });
       });
-    });
 
-    buildTicks();
-    recalc();
+      ['input','change'].forEach(evt=>{
+        [vialMg,diluentMl,doseMcg,syrSize].forEach(el=>{
+          el.addEventListener(evt,()=>{
+            if(el!==doseMcg){
+              document.querySelectorAll('.preset').forEach(b=>b.setAttribute('aria-pressed','false'));
+            }
+            recalc();
+            if(el===syrSize) buildTicks();
+          });
+        });
+      });
+
+      buildTicks();
+      recalc();
+    });
   </script>
 </body>
 </html>
