@@ -91,8 +91,14 @@
             </select>
           </div>
           <div class="field sm">
-            <label for="doseMcg">Desired dose (mcg)</label>
-            <input id="doseMcg" class="input" type="number" step="1" min="0" value="50" />
+            <label for="doseVal">Desired dose</label>
+            <div style="display:flex; gap:8px">
+              <input id="doseVal" class="input" type="number" step="0.001" min="0" value="50" style="flex:1" />
+              <select id="doseUnit" class="input" style="width:120px">
+                <option value="mcg" selected>mcg</option>
+                <option value="mg">mg</option>
+              </select>
+            </div>
           </div>
         </div>
 
@@ -131,7 +137,7 @@
             <div class="chip">
               <div class="k">Potency</div>
               <div class="v" id="mcgPerUnit">—</div>
-              <div class="k">mcg per unit</div>
+              <div class="k">mcg per unit <span id="mgPerUnitSmall" class="muted">(= <span id="mgPerUnit">—</span> mg)</span></div>
             </div>
           </div>
           <p id="warn" class="note" style="margin-top:8px"></p>
@@ -149,7 +155,8 @@
       const $id = (s)=>document.getElementById(s);
       const vialMg = $id('vialMg');
       const diluentMl = $id('diluentMl');
-      const doseMcg = $id('doseMcg');
+      const doseVal = $id('doseVal');
+      const doseUnit = $id('doseUnit');
       const syrSize = $id('syrSize');
 
       const doseOut = $id('doseOut');
@@ -157,6 +164,7 @@
       const unitWord = $id('unitWord');
       const mlOut = $id('mlOut');
       const mcgPerUnit = $id('mcgPerUnit');
+      const mgPerUnitEl = $id('mgPerUnit');
       const unitsOutChip = $id('unitsOutChip');
       const ticks = $id('ticks');
       const fill = $id('fill');
@@ -184,7 +192,9 @@
       function recalc(){
         const mg=parseFloat(vialMg.value);
         const ml=parseFloat(diluentMl.value);
-        const dose=parseFloat(doseMcg.value);
+        // Normalize desired dose to mcg for math
+        const rawDose = parseFloat(doseVal.value);
+        const dose = (doseUnit.value==='mg') ? rawDose*1000 : rawDose; // mcg
         const maxUnits=parseInt(syrSize.value,10)||30;
 
         const conc=(mg>0&&ml>0)?(mg/ml):NaN; // mg per mL
@@ -192,11 +202,18 @@
         const units=Number.isFinite(mcgPerU)&&dose>0?dose/mcgPerU:NaN;
         const mlToPull=Number.isFinite(units)?units*0.01:NaN;
 
-        doseOut.textContent=fmt(dose,0);
+        // Update dose text in chosen unit
+        if(doseUnit.value==='mg'){
+          doseOut.textContent = fmt(rawDose,3) + ' mg';
+        } else {
+          doseOut.textContent = fmt(rawDose,0) + ' mcg';
+        }
         mcgPerUnit.textContent=Number.isFinite(mcgPerU)?fmt(mcgPerU,2):'—';
         unitsOut.textContent=fmt(units,2);
         unitsOutChip.textContent=Number.isFinite(units)?fmt(units,2):'—';
         mlOut.textContent=Number.isFinite(mlToPull)?`${fmt(mlToPull,3)} mL`:'—';
+        // Also show mg per unit for clarity
+        mgPerUnitEl.textContent = Number.isFinite(mcgPerU)? fmt(mcgPerU/1000,4) : '—';
         if(Number.isFinite(units)) unitWord.textContent=Math.abs(units-1)<0.005?'unit':'units';
 
         const pct=Number.isFinite(units)?clamp(units/maxUnits*100,0,100):0;
@@ -215,13 +232,15 @@
         btn.addEventListener('click',()=>{
           document.querySelectorAll('.preset').forEach(b=>b.setAttribute('aria-pressed','false'));
           btn.setAttribute('aria-pressed','true');
-          doseMcg.value=btn.getAttribute('data-dose')||doseMcg.value;
+          // Presets assume the current selected unit
+          doseVal.value = btn.getAttribute('data-dose')||doseVal.value;
           recalc();
         });
       });
+      });
 
       ['input','change'].forEach(evt=>{
-        [vialMg,diluentMl,doseMcg,syrSize].forEach(el=>{
+        [vialMg,diluentMl,doseVal,doseUnit,syrSize].forEach(el=>{
           el.addEventListener(evt,()=>{
             if(el!==doseMcg){
               document.querySelectorAll('.preset').forEach(b=>b.setAttribute('aria-pressed','false'));
