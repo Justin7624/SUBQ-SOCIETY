@@ -24,7 +24,7 @@
     .row{display:grid;grid-template-columns:repeat(12,1fr);gap:10px}
     .field{grid-column:span 6}
     .field.sm{grid-column:span 4}
-    .input{width:100%;background:#0d0e12;color:var(--ink);border:1px solid #2a2c33;border-radius:12px;padding:12px 14px;font-size:15px;outline:2px solid transparent;outline-offset:2px;transition:border .15s ease, outline .15s ease}
+    .input{position:relative;z-index:1;pointer-events:auto;width:100%;background:#0d0e12;color:var(--ink);border:1px solid #2a2c33;border-radius:12px;padding:12px 14px;font-size:15px;outline:2px solid transparent;outline-offset:2px;transition:border .15s ease, outline .15s ease}
     .input:focus{border-color:#5c6ae6;outline-color:#3d44a3}
     .btns{display:flex;flex-wrap:wrap;gap:10px}
     button.pill{background:#0d0e12;border:1px solid #2a2c33;color:var(--ink);padding:10px 14px;border-radius:999px;cursor:pointer;font-weight:600}
@@ -85,15 +85,17 @@
           <div class="field sm">
             <label for="syrSize">Syringe size (units scale)</label>
             <select id="syrSize" class="input">
-              <option value="30" selected>30‑unit (short)</option>
-              <option value="50">50‑unit</option>
-              <option value="100">100‑unit</option>
+              <option value="30" selected>30-unit (short)</option>
+              <option value="50">50-unit</option>
+              <option value="100">100-unit</option>
             </select>
           </div>
+
+          <!-- Desired dose with unit selector -->
           <div class="field sm">
             <label for="doseVal">Desired dose</label>
             <div style="display:flex; gap:8px">
-              <input id="doseVal" class="input" type="number" step="0.001" min="0" value="50" style="flex:1" />
+              <input id="doseVal" class="input" type="number" step="0.001" min="0" value="50" inputmode="decimal" style="flex:1" />
               <select id="doseUnit" class="input" style="width:120px">
                 <option value="mcg" selected>mcg</option>
                 <option value="mg">mg</option>
@@ -112,7 +114,7 @@
           </div>
         </div>
 
-        <p class="note" style="margin-top:10px">Assumes a U‑100 insulin syringe where <strong>1 unit = 0.01 mL</strong>. Calculations update as you type.</p>
+        <p class="note" style="margin-top:10px">Assumes a U-100 insulin syringe where <strong>1 unit = 0.01 mL</strong>. Calculations update as you type.</p>
       </section>
 
       <!-- RIGHT: Syringe / Results -->
@@ -120,7 +122,7 @@
         <h2 id="visTitle" class="big" style="margin:6px 0 12px">Visual Aid</h2>
 
         <div class="syringe" aria-live="polite">
-          <h3 id="doseText">To have a dose of <span id="doseOut">50</span> mcg pull the syringe to <span id="unitsOut">1.0</span> <span id="unitWord">unit</span></h3>
+          <h3 id="doseText">To have a dose of <span id="doseOut">50 mcg</span> pull the syringe to <span id="unitsOut">1.0</span> <span id="unitWord">unit</span></h3>
           <div class="tube" id="tube">
             <div class="fill" id="fill"></div>
             <div class="cap" aria-hidden="true"></div>
@@ -137,7 +139,7 @@
             <div class="chip">
               <div class="k">Potency</div>
               <div class="v" id="mcgPerUnit">—</div>
-              <div class="k">mcg per unit <span id="mgPerUnitSmall" class="muted">(= <span id="mgPerUnit">—</span> mg)</span></div>
+              <div class="k">mcg per unit <span class="muted"> (= <span id="mgPerUnit">—</span> mg)</span></div>
             </div>
           </div>
           <p id="warn" class="note" style="margin-top:8px"></p>
@@ -171,6 +173,8 @@
       const cursor = $id('cursor');
       const warnEl = $id('warn');
 
+      const presetBtns = Array.from(document.querySelectorAll('.preset'));
+
       const clamp=(n,min,max)=>Math.min(max,Math.max(min,n));
       const fmt=(n,d=2)=>Number.isFinite(n)?n.toFixed(d).replace(/\.0+$/,'').replace(/(\.[1-9]*)0+$/,'$1'):'—';
 
@@ -189,31 +193,49 @@
         }
       }
 
+      // Update preset labels/values to match the selected unit
+      function refreshPresets(){
+        const unit = doseUnit.value; // 'mcg' or 'mg'
+        const base = [50,100,250,500]; // base mcg values
+        presetBtns.forEach((btn, i)=>{
+          const mcg = base[i] ?? parseFloat(btn.dataset.baseMcg) || 50;
+          btn.dataset.baseMcg = mcg;
+          if(unit==='mg'){
+            const mg = mcg/1000;
+            btn.textContent = `${fmt(mg,3)} mg`;
+            btn.dataset.dose = mg;      // button value in mg
+          } else {
+            btn.textContent = `${mcg} mcg`;
+            btn.dataset.dose = mcg;     // button value in mcg
+          }
+          btn.setAttribute('aria-pressed','false');
+        });
+      }
+
       function recalc(){
         const mg=parseFloat(vialMg.value);
         const ml=parseFloat(diluentMl.value);
-        // Normalize desired dose to mcg for math
-        const rawDose = parseFloat(doseVal.value);
-        const dose = (doseUnit.value==='mg') ? rawDose*1000 : rawDose; // mcg
+        const rawDose=parseFloat(doseVal.value);
         const maxUnits=parseInt(syrSize.value,10)||30;
 
-        const conc=(mg>0&&ml>0)?(mg/ml):NaN; // mg per mL
-        const mcgPerU=Number.isFinite(conc)?conc*10:NaN; // mcg per U
-        const units=Number.isFinite(mcgPerU)&&dose>0?dose/mcgPerU:NaN;
+        const doseMcg = (doseUnit.value==='mg') ? rawDose*1000 : rawDose;
+
+        const conc=(mg>0&&ml>0)?(mg/ml):NaN;      // mg per mL
+        const mcgPerU=Number.isFinite(conc)?conc*10:NaN; // (mg/mL)*10 = mg per U -> in mcg: *1000
+        const mcgPerUnitVal = Number.isFinite(mcgPerU)? mcgPerU : NaN; // mcg per unit
+        const units=Number.isFinite(mcgPerUnitVal)&&doseMcg>0?doseMcg/mcgPerUnitVal:NaN;
         const mlToPull=Number.isFinite(units)?units*0.01:NaN;
 
-        // Update dose text in chosen unit
-        if(doseUnit.value==='mg'){
-          doseOut.textContent = fmt(rawDose,3) + ' mg';
-        } else {
-          doseOut.textContent = fmt(rawDose,0) + ' mcg';
-        }
-        mcgPerUnit.textContent=Number.isFinite(mcgPerU)?fmt(mcgPerU,2):'—';
+        // Dose text reflects chosen unit
+        doseOut.textContent = (doseUnit.value==='mg')
+          ? `${fmt(rawDose,3)} mg`
+          : `${fmt(rawDose,0)} mcg`;
+
+        mcgPerUnit.textContent=Number.isFinite(mcgPerUnitVal)?fmt(mcgPerUnitVal,2):'—';
+        mgPerUnitEl.textContent=Number.isFinite(mcgPerUnitVal)?fmt(mcgPerUnitVal/1000,4):'—';
         unitsOut.textContent=fmt(units,2);
         unitsOutChip.textContent=Number.isFinite(units)?fmt(units,2):'—';
         mlOut.textContent=Number.isFinite(mlToPull)?`${fmt(mlToPull,3)} mL`:'—';
-        // Also show mg per unit for clarity
-        mgPerUnitEl.textContent = Number.isFinite(mcgPerU)? fmt(mcgPerU/1000,4) : '—';
         if(Number.isFinite(units)) unitWord.textContent=Math.abs(units-1)<0.005?'unit':'units';
 
         const pct=Number.isFinite(units)?clamp(units/maxUnits*100,0,100):0;
@@ -228,30 +250,33 @@
         }
       }
 
-      document.querySelectorAll('.preset').forEach(btn=>{
+      // Preset buttons
+      presetBtns.forEach(btn=>{
         btn.addEventListener('click',()=>{
-          document.querySelectorAll('.preset').forEach(b=>b.setAttribute('aria-pressed','false'));
+          presetBtns.forEach(b=>b.setAttribute('aria-pressed','false'));
           btn.setAttribute('aria-pressed','true');
-          // Presets assume the current selected unit
-          doseVal.value = btn.getAttribute('data-dose')||doseVal.value;
+          doseVal.value = btn.dataset.dose || doseVal.value; // dataset matches current unit
           recalc();
         });
       });
-      });
 
+      // Inputs
       ['input','change'].forEach(evt=>{
         [vialMg,diluentMl,doseVal,doseUnit,syrSize].forEach(el=>{
           el.addEventListener(evt,()=>{
-            if(el!==doseMcg){
-              document.querySelectorAll('.preset').forEach(b=>b.setAttribute('aria-pressed','false'));
+            if(el!==doseVal){
+              presetBtns.forEach(b=>b.setAttribute('aria-pressed','false'));
             }
+            if(el===doseUnit){ refreshPresets(); }
+            if(el===syrSize){ buildTicks(); }
             recalc();
-            if(el===syrSize) buildTicks();
           });
         });
       });
 
+      // Init
       buildTicks();
+      refreshPresets();
       recalc();
     });
   </script>
