@@ -50,6 +50,17 @@
     .dose-group{display:grid;grid-template-columns:1fr 110px;gap:8px}
     .unit-select{width:110px;min-height:46px;font-size:16px}
 
+    /* >>> NEW: Make the Desired dose field wider <<< */
+    .field.dose { grid-column: span 8; }            /* desktop/tablet: ~2/3 width */
+    @media (max-width: 900px) {
+      .field.dose { grid-column: span 12; }         /* phones: full width */
+    }
+    /* >>> NEW: Give input more space vs the unit select on very narrow phones <<< */
+    @media (max-width: 420px) {
+      .dose-group { grid-template-columns: 1fr 96px; }
+      .unit-select { width: 96px; }
+    }
+
     /* Make sure number text always renders (Android/WebKit quirk) */
     input[type="number"]{
       appearance:textfield;
@@ -70,12 +81,6 @@
     input:-webkit-autofill{
       -webkit-text-fill-color: var(--ink) !important;
       transition: background-color 9999s ease-in-out 0s;
-    }
-
-    /* Narrow phones: give input even more room */
-    @media (max-width:420px){
-      .dose-group{grid-template-columns:1fr 96px}
-      .unit-select{width:96px}
     }
 
     .btns{display:flex;flex-wrap:wrap;gap:10px}
@@ -145,7 +150,8 @@
           </div>
 
           <!-- Desired dose with unit toggle -->
-          <div class="field sm">
+          <!-- CHANGED: added 'dose' class here -->
+          <div class="field sm dose">
             <label for="doseVal">Desired dose</label>
             <div class="dose-group">
               <input id="doseVal" class="input" type="number" step="0.001" min="0" value="0.5" inputmode="decimal" placeholder="Enter dose" />
