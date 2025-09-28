@@ -10,6 +10,7 @@
   <style>
     :root{ --bg:#0f0f12;--card:#15161a;--ink:#e7e7ea;--muted:#9aa0ab;--accent:#7c5cff;--accent-2:#25d0a6;--error:#ff6b6b; }
     *{box-sizing:border-box}
+    html{-webkit-text-size-adjust:100%}
     body{margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:radial-gradient(1100px 700px at 100% -50%, #1b1c22 30%, #0f0f12 70%),var(--bg);color:var(--ink)}
     .wrap{max-width:1080px;margin:auto;padding:24px}
     header{display:flex;gap:14px;align-items:center;justify-content:space-between;margin-bottom:18px}
@@ -34,13 +35,14 @@
       border:1px solid #2a2c33;
       border-radius:12px;
       padding:12px 14px;
-      font-size:16px;  /* mobile: prevents iOS zoom & tiny text */
+      font-size:16px;           /* mobile: prevents iOS zoom & tiny text */
       line-height:1.3;
-      min-height:46px; /* touch-friendly height */
+      min-height:46px;          /* touch-friendly height */
       caret-color:#fff;
       outline:2px solid transparent;
       outline-offset:2px;
       transition:border .15s ease, outline .15s ease;
+      text-align:left;
     }
     .input:focus{border-color:#5c6ae6;outline-color:#3d44a3}
 
@@ -48,10 +50,27 @@
     .dose-group{display:grid;grid-template-columns:1fr 110px;gap:8px}
     .unit-select{width:110px;min-height:46px;font-size:16px}
 
-    /* Hide number spinners / fix WebKit clipping */
-    input[type="number"]{appearance:textfield;-webkit-appearance:textfield}
+    /* Make sure number text always renders (Android/WebKit quirk) */
+    input[type="number"]{
+      appearance:textfield;
+      -webkit-appearance:textfield;
+      -webkit-text-fill-color: var(--ink); /* <-- critical fix */
+      color: var(--ink);
+      background-color:#0d0e12;
+    }
     input[type="number"]::-webkit-outer-spin-button,
     input[type="number"]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+
+    /* Placeholder styling for visibility */
+    ::placeholder{color:var(--muted);opacity:.8}
+    :-ms-input-placeholder{color:var(--muted)}
+    ::-ms-input-placeholder{color:var(--muted)}
+
+    /* Autofill color on Android/Chrome */
+    input:-webkit-autofill{
+      -webkit-text-fill-color: var(--ink) !important;
+      transition: background-color 9999s ease-in-out 0s;
+    }
 
     /* Narrow phones: give input even more room */
     @media (max-width:420px){
@@ -114,14 +133,14 @@
           </div>
           <div class="field sm">
             <label for="diluentMl">Diluent added (mL)</label>
-            <input id="diluentMl" class="input" type="number" step="0.1" value="2" />
+            <input id="diluentMl" class="input" type="number" step="0.1" value="1" />
           </div>
           <div class="field sm">
             <label for="syrSize">Syringe size (units scale)</label>
             <select id="syrSize" class="input">
-              <option value="30" selected>30-unit (short)</option>
+              <option value="30">30-unit (short)</option>
               <option value="50">50-unit</option>
-              <option value="100">100-unit</option>
+              <option value="100" selected>100-unit</option>
             </select>
           </div>
 
@@ -129,10 +148,10 @@
           <div class="field sm">
             <label for="doseVal">Desired dose</label>
             <div class="dose-group">
-              <input id="doseVal" class="input" type="number" step="0.001" min="0" value="50" inputmode="decimal" />
+              <input id="doseVal" class="input" type="number" step="0.001" min="0" value="0.5" inputmode="decimal" placeholder="Enter dose" />
               <select id="doseUnit" class="input unit-select">
-                <option value="mcg" selected>mcg</option>
-                <option value="mg">mg</option>
+                <option value="mcg">mcg</option>
+                <option value="mg" selected>mg</option>
               </select>
             </div>
           </div>
@@ -142,7 +161,7 @@
           <label>Quick select dose</label>
 
           <!-- mcg presets -->
-          <div id="presets-mcg" class="btns" role="group" aria-label="Preset doses (mcg)">
+          <div id="presets-mcg" class="btns" role="group" aria-label="Preset doses (mcg)" style="display:none">
             <button class="pill preset" data-dose="50" data-unit="mcg" aria-pressed="true">50 mcg</button>
             <button class="pill preset" data-dose="100" data-unit="mcg">100 mcg</button>
             <button class="pill preset" data-dose="250" data-unit="mcg">250 mcg</button>
@@ -150,7 +169,7 @@
           </div>
 
           <!-- mg presets -->
-          <div id="presets-mg" class="btns" role="group" aria-label="Preset doses (mg)" style="display:none">
+          <div id="presets-mg" class="btns" role="group" aria-label="Preset doses (mg)">
             <button class="pill preset" data-dose="1" data-unit="mg" aria-pressed="true">1 mg</button>
             <button class="pill preset" data-dose="2" data-unit="mg">2 mg</button>
             <button class="pill preset" data-dose="5" data-unit="mg">5 mg</button>
@@ -168,11 +187,11 @@
         <div class="syringe" aria-live="polite">
           <h3>
             To have a dose of
-            <span id="doseOut">50</span>
-            <span id="doseUnitLabel">mcg</span>
+            <span id="doseOut">0.5</span>
+            <span id="doseUnitLabel">mg</span>
             pull the syringe to
-            <span id="unitsOut">1.0</span>
-            <span id="unitWord">unit</span>
+            <span id="unitsOut">—</span>
+            <span id="unitWord">units</span>
           </h3>
           <div class="tube" id="tube">
             <div class="fill" id="fill"></div>
@@ -190,7 +209,7 @@
             <div class="chip">
               <div class="k">Potency</div>
               <div class="v" id="potencyOut">—</div>
-              <div class="k"><span id="potencyUnitLabel">mcg</span> per unit</div>
+              <div class="k"><span id="potencyUnitLabel">mg</span> per unit</div>
             </div>
           </div>
           <p id="warn" class="note" style="margin-top:8px"></p>
