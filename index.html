@@ -12,36 +12,30 @@
     *{box-sizing:border-box}
     body{margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:radial-gradient(1100px 700px at 100% -50%, #1b1c22 30%, #0f0f12 70%),var(--bg);color:var(--ink)}
     .wrap{max-width:1080px;margin:auto;padding:24px}
-
     header{display:flex;gap:14px;align-items:center;justify-content:space-between;margin-bottom:18px}
     .brand{display:flex;gap:12px;align-items:center}
     .logo{width:46px;height:46px;border-radius:8px;overflow:hidden;display:flex;align-items:center;justify-content:center;background:#0d0e12;border:1px solid #2a2c33}
     .logo img{width:100%;height:100%;object-fit:contain;display:block}
     h1{font-size:clamp(22px,3vw,32px);margin:0;font-weight:800;letter-spacing:-0.02em}
-
-    .card{position:relative;background:linear-gradient(180deg, #1a1b21, #131419);border:1px solid #23242b;box-shadow:0 10px 30px rgba(0,0,0,.25), inset 0 1px 0 rgba(255,255,255,.03);border-radius:16px;padding:18px; z-index:0}
-    .grid{display:grid;grid-template-columns:1fr;gap:16px;align-items:start}
+    .card{background:linear-gradient(180deg, #1a1b21, #131419);border:1px solid #23242b;box-shadow:0 10px 30px rgba(0,0,0,.25), inset 0 1px 0 rgba(255,255,255,.03);border-radius:16px;padding:18px}
+    .grid{display:grid;grid-template-columns:1fr;gap:16px}
     @media(min-width:900px){.grid{grid-template-columns:1.1fr .9fr}}
     label{display:block;font-size:12px;color:var(--muted);margin-bottom:6px}
     .row{display:grid;grid-template-columns:repeat(12,1fr);gap:10px}
     .field{grid-column:span 6}
     .field.sm{grid-column:span 4}
-
-    .input{position:relative;z-index:2;pointer-events:auto;width:100%;background:#0d0e12;color:var(--ink);border:1px solid #2a2c33;border-radius:12px;padding:12px 14px;font-size:15px;outline:2px solid transparent;outline-offset:2px;transition:border .15s ease, outline .15s ease}
+    .input{width:100%;background:#0d0e12;color:var(--ink);border:1px solid #2a2c33;border-radius:12px;padding:12px 14px;font-size:15px;outline:2px solid transparent;outline-offset:2px;transition:border .15s ease, outline .15s ease}
     .input:focus{border-color:#5c6ae6;outline-color:#3d44a3}
-
-    .btns{display:flex;flex-wrap:wrap;gap:10px; position:relative; z-index:2}
+    .dose-group{display:flex;gap:8px}
+    .unit-select{width:110px}
+    .btns{display:flex;flex-wrap:wrap;gap:10px}
     button.pill{background:#0d0e12;border:1px solid #2a2c33;color:var(--ink);padding:10px 14px;border-radius:999px;cursor:pointer;font-weight:600}
     button.pill[aria-pressed="true"],button.pill:hover{border-color:#4d8cff;background:#111424}
-
     .muted{color:var(--muted)}
     .big{font-size:clamp(18px,3vw,24px);font-weight:800}
 
     /* Syringe visual */
-    .syringe{position:relative;background:#0c0d11;border:1px solid #272930;border-radius:14px;padding:18px; z-index:0}
-    /* prevent any child from ever blocking clicks on the left card */
-    .syringe *{pointer-events:none}
-
+    .syringe{background:#0c0d11;border:1px solid #272930;border-radius:14px;padding:18px}
     .syringe h3{margin:0 0 10px 0;font-size:18px}
     .tube{position:relative;height:36px;border-radius:18px;background:linear-gradient(180deg,#11131a,#0b0c10);border:1px solid #2a2c33;box-shadow:inset 0 2px 8px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.05)}
     .fill{position:absolute;left:0;top:0;bottom:0;width:0%;background:linear-gradient(90deg, var(--accent), #5b9dff);border-radius:18px;box-shadow:inset 0 0 12px rgba(255,255,255,.25), 0 0 16px rgba(124,92,255,.45)}
@@ -64,7 +58,7 @@
   </style>
 </head>
 <body>
-  <!-- Hero banner -->
+  <!-- Hero banner at top with tighter spacing (12px) -->
   <img src="IMG_20250926_184644.png" alt="SUBQ SOCIETY – THE UNDERGROUND PROTOCOL" style="max-width:100%;height:auto;display:block;margin:0 auto 12px auto;">
 
   <div class="wrap">
@@ -99,12 +93,12 @@
             </select>
           </div>
 
-          <!-- Desired dose with unit selector -->
+          <!-- Desired dose with unit toggle -->
           <div class="field sm">
             <label for="doseVal">Desired dose</label>
-            <div style="display:flex; gap:8px; position:relative; z-index:2">
-              <input id="doseVal" class="input" type="number" step="0.001" min="0" value="50" inputmode="decimal" style="flex:1" />
-              <select id="doseUnit" class="input" style="width:120px">
+            <div class="dose-group">
+              <input id="doseVal" class="input" type="number" step="0.001" min="0" value="50" inputmode="decimal" />
+              <select id="doseUnit" class="input unit-select">
                 <option value="mcg" selected>mcg</option>
                 <option value="mg">mg</option>
               </select>
@@ -114,11 +108,21 @@
 
         <div style="margin-top:10px">
           <label>Quick select dose</label>
-          <div class="btns" id="presetRow" role="group" aria-label="Preset doses">
-            <button class="pill preset" data-dose="50" aria-pressed="true">50 mcg</button>
-            <button class="pill preset" data-dose="100">100 mcg</button>
-            <button class="pill preset" data-dose="250">250 mcg</button>
-            <button class="pill preset" data-dose="500">500 mcg</button>
+
+          <!-- mcg presets -->
+          <div id="presets-mcg" class="btns" role="group" aria-label="Preset doses (mcg)">
+            <button class="pill preset" data-dose="50" data-unit="mcg" aria-pressed="true">50 mcg</button>
+            <button class="pill preset" data-dose="100" data-unit="mcg">100 mcg</button>
+            <button class="pill preset" data-dose="250" data-unit="mcg">250 mcg</button>
+            <button class="pill preset" data-dose="500" data-unit="mcg">500 mcg</button>
+          </div>
+
+          <!-- mg presets -->
+          <div id="presets-mg" class="btns" role="group" aria-label="Preset doses (mg)" style="display:none">
+            <button class="pill preset" data-dose="1" data-unit="mg" aria-pressed="true">1 mg</button>
+            <button class="pill preset" data-dose="2" data-unit="mg">2 mg</button>
+            <button class="pill preset" data-dose="5" data-unit="mg">5 mg</button>
+            <button class="pill preset" data-dose="10" data-unit="mg">10 mg</button>
           </div>
         </div>
 
@@ -130,7 +134,14 @@
         <h2 id="visTitle" class="big" style="margin:6px 0 12px">Visual Aid</h2>
 
         <div class="syringe" aria-live="polite">
-          <h3 id="doseText">To have a dose of <span id="doseOut">50 mcg</span> pull the syringe to <span id="unitsOut">1.0</span> <span id="unitWord">unit</span></h3>
+          <h3>
+            To have a dose of
+            <span id="doseOut">50</span>
+            <span id="doseUnitLabel">mcg</span>
+            pull the syringe to
+            <span id="unitsOut">1.0</span>
+            <span id="unitWord">unit</span>
+          </h3>
           <div class="tube" id="tube">
             <div class="fill" id="fill"></div>
             <div class="cap" aria-hidden="true"></div>
@@ -146,8 +157,8 @@
             </div>
             <div class="chip">
               <div class="k">Potency</div>
-              <div class="v" id="mcgPerUnit">—</div>
-              <div class="k">mcg per unit <span class="muted"> (= <span id="mgPerUnit">—</span> mg)</span></div>
+              <div class="v" id="potencyOut">—</div>
+              <div class="k"><span id="potencyUnitLabel">mcg</span> per unit</div>
             </div>
           </div>
           <p id="warn" class="note" style="margin-top:8px"></p>
@@ -162,26 +173,32 @@
 
   <script>
     document.addEventListener('DOMContentLoaded', () => {
-      const $id = (s)=>document.getElementById(s);
-      const vialMg = $id('vialMg');
-      const diluentMl = $id('diluentMl');
-      const doseVal = $id('doseVal');
-      const doseUnit = $id('doseUnit');
-      const syrSize = $id('syrSize');
+      const $ = (id) => document.getElementById(id);
 
-      const doseOut = $id('doseOut');
-      const unitsOut = $id('unitsOut');
-      const unitWord = $id('unitWord');
-      const mlOut = $id('mlOut');
-      const mcgPerUnit = $id('mcgPerUnit');
-      const mgPerUnitEl = $id('mgPerUnit');
-      const unitsOutChip = $id('unitsOutChip');
-      const ticks = $id('ticks');
-      const fill = $id('fill');
-      const cursor = $id('cursor');
-      const warnEl = $id('warn');
+      // Inputs
+      const vialMg = $('vialMg');
+      const diluentMl = $('diluentMl');
+      const syrSize  = $('syrSize');
+      const doseVal  = $('doseVal');
+      const doseUnit = $('doseUnit');
 
-      const presetBtns = Array.from(document.querySelectorAll('.preset'));
+      // Outputs
+      const doseOut = $('doseOut');
+      const doseUnitLabel = $('doseUnitLabel');
+      const unitsOut = $('unitsOut');
+      const unitWord = $('unitWord');
+      const mlOut = $('mlOut');
+      const potencyOut = $('potencyOut');
+      const potencyUnitLabel = $('potencyUnitLabel');
+      const unitsOutChip = $('unitsOutChip');
+      const ticks = $('ticks');
+      const fill = $('fill');
+      const cursor = $('cursor');
+      const warnEl = $('warn');
+
+      // Preset rows
+      const presetsMcg = $('presets-mcg');
+      const presetsMg  = $('presets-mg');
 
       const clamp=(n,min,max)=>Math.min(max,Math.max(min,n));
       const fmt=(n,d=2)=>Number.isFinite(n)?n.toFixed(d).replace(/\.0+$/,'').replace(/(\.[1-9]*)0+$/,'$1'):'—';
@@ -201,53 +218,46 @@
         }
       }
 
-      // Update preset labels/values to match the selected unit
-      function refreshPresets(){
-        const unit = doseUnit.value; // 'mcg' or 'mg'
-        const base = [50,100,250,500]; // base mcg values
-        presetBtns.forEach((btn, i)=>{
-          const mcg = base[i] ?? parseFloat(btn.dataset.baseMcg) || 50;
-          btn.dataset.baseMcg = mcg;
-          if(unit==='mg'){
-            const mg = mcg/1000;
-            btn.textContent = `${fmt(mg,3)} mg`;
-            btn.dataset.dose = mg;      // value in mg
-          } else {
-            btn.textContent = `${mcg} mcg`;
-            btn.dataset.dose = mcg;     // value in mcg
-          }
-          btn.setAttribute('aria-pressed','false');
-        });
+      // Normalize desired dose to mcg for math
+      function getDesiredDoseMcg(){
+        const val = parseFloat(doseVal.value);
+        if(!Number.isFinite(val) || val <= 0) return NaN;
+        return (doseUnit.value === 'mg') ? val * 1000 : val;
       }
 
       function recalc(){
         const mg=parseFloat(vialMg.value);
         const ml=parseFloat(diluentMl.value);
-        const rawDose=parseFloat(doseVal.value);
         const maxUnits=parseInt(syrSize.value,10)||30;
 
-        const doseMcg = (doseUnit.value==='mg') ? rawDose*1000 : rawDose;
+        // concentration mg/mL
+        const conc = (mg>0 && ml>0) ? (mg/ml) : NaN;
 
-        // concentration: mg per mL
-        const conc=(mg>0&&ml>0)?(mg/ml):NaN;
+        // mcg per unit (U-100 -> 1U = 0.01 mL => mg/unit = conc*0.01; mcg/unit = mg/unit * 1000 = conc*10)
+        const mcgPerUnit = Number.isFinite(conc) ? conc * 10 : NaN;
+        const mgPerUnit  = Number.isFinite(mcgPerUnit) ? (mcgPerUnit/1000) : NaN;
 
-        // mcg per unit (U-100 => 1U = 0.01mL) : (mg/mL * 0.01 mL) * 1000 mcg/mg
-        const mcgPerUnitVal = Number.isFinite(conc)? conc * 10 : NaN;
+        const desiredMcg = getDesiredDoseMcg();
+        const units = (Number.isFinite(mcgPerUnit) && Number.isFinite(desiredMcg)) ? (desiredMcg / mcgPerUnit) : NaN;
+        const mlToPull = Number.isFinite(units) ? units*0.01 : NaN;
 
-        const units=Number.isFinite(mcgPerUnitVal)&&doseMcg>0?doseMcg/mcgPerUnitVal:NaN;
-        const mlToPull=Number.isFinite(units)?units*0.01:NaN;
+        // Update header dose and unit
+        if(doseUnit.value === 'mg'){
+          doseOut.textContent = fmt(desiredMcg/1000,3); // mg
+          doseUnitLabel.textContent = 'mg';
+          potencyOut.textContent = Number.isFinite(mgPerUnit) ? fmt(mgPerUnit,4) : '—';
+          potencyUnitLabel.textContent = 'mg';
+        } else {
+          doseOut.textContent = fmt(desiredMcg,0); // mcg
+          doseUnitLabel.textContent = 'mcg';
+          potencyOut.textContent = Number.isFinite(mcgPerUnit) ? fmt(mcgPerUnit,2) : '—';
+          potencyUnitLabel.textContent = 'mcg';
+        }
 
-        // Dose text reflects chosen unit
-        doseOut.textContent = (doseUnit.value==='mg')
-          ? `${fmt(rawDose,3)} mg`
-          : `${fmt(rawDose,0)} mcg`;
-
-        mcgPerUnit.textContent=Number.isFinite(mcgPerUnitVal)?fmt(mcgPerUnitVal,2):'—';
-        mgPerUnitEl.textContent=Number.isFinite(mcgPerUnitVal)?fmt(mcgPerUnitVal/1000,4):'—';
-        unitsOut.textContent=fmt(units,2);
-        unitsOutChip.textContent=Number.isFinite(units)?fmt(units,2):'—';
-        mlOut.textContent=Number.isFinite(mlToPull)?`${fmt(mlToPull,3)} mL`:'—';
-        if(Number.isFinite(units)) unitWord.textContent=Math.abs(units-1)<0.005?'unit':'units';
+        unitsOut.textContent = fmt(units,2);
+        unitsOutChip.textContent = Number.isFinite(units)?fmt(units,2):'—';
+        mlOut.textContent = Number.isFinite(mlToPull) ? `${fmt(mlToPull,3)} mL` : '—';
+        if(Number.isFinite(units)) unitWord.textContent = Math.abs(units-1)<0.005 ? 'unit' : 'units';
 
         const pct=Number.isFinite(units)?clamp(units/maxUnits*100,0,100):0;
         fill.style.width=pct+'%';
@@ -261,33 +271,74 @@
         }
       }
 
-      // Preset buttons
-      presetBtns.forEach(btn=>{
-        btn.addEventListener('click',()=>{
-          presetBtns.forEach(b=>b.setAttribute('aria-pressed','false'));
-          btn.setAttribute('aria-pressed','true');
-          doseVal.value = btn.dataset.dose || doseVal.value; // value matches current unit
-          recalc();
-        }, {passive:true});
-      });
+      // Handle preset clicks within a given row
+      function wirePresets(row){
+        row.querySelectorAll('.preset').forEach(btn=>{
+          btn.addEventListener('click',()=>{
+            // clear pressed in both rows
+            document.querySelectorAll('.preset').forEach(b=>b.setAttribute('aria-pressed','false'));
+            btn.setAttribute('aria-pressed','true');
 
-      // Inputs
-      ['input','change'].forEach(evt=>{
-        [vialMg,diluentMl,doseVal,doseUnit,syrSize].forEach(el=>{
-          el.addEventListener(evt,()=>{
-            if(el!==doseVal){
-              presetBtns.forEach(b=>b.setAttribute('aria-pressed','false'));
-            }
-            if(el===doseUnit){ refreshPresets(); }
-            if(el===syrSize){ buildTicks(); }
+            // set value and unit from the clicked button
+            doseUnit.value = btn.dataset.unit;
+            doseVal.value  = btn.dataset.dose;
+
+            // toggle rows visibility to match unit
+            togglePresetRows();
             recalc();
           });
         });
+      }
+
+      function togglePresetRows(){
+        const useMg = (doseUnit.value === 'mg');
+        presetsMg.style.display  = useMg ? 'flex' : 'none';
+        presetsMcg.style.display = useMg ? 'none' : 'flex';
+
+        // Update sentence/unit labels immediately
+        doseUnitLabel.textContent   = useMg ? 'mg'  : 'mcg';
+        potencyUnitLabel.textContent= useMg ? 'mg'  : 'mcg';
+      }
+
+      // When unit changes via dropdown: convert existing number to keep the same absolute dose
+      function convertOnUnitChange(prevUnit, nextUnit){
+        const val = parseFloat(doseVal.value);
+        if(!Number.isFinite(val)) return;
+        if(prevUnit === nextUnit) return;
+        if(prevUnit === 'mcg' && nextUnit === 'mg'){
+          doseVal.value = (val/1000).toString();
+        } else if(prevUnit === 'mg' && nextUnit === 'mcg'){
+          doseVal.value = (val*1000).toString();
+        }
+      }
+
+      // Events
+      ['input','change'].forEach(evt=>{
+        [vialMg,diluentMl,syrSize,doseVal].forEach(el=>{
+          el.addEventListener(evt, ()=>{ if(el!==doseVal){ document.querySelectorAll('.preset').forEach(b=>b.setAttribute('aria-pressed','false')); } if(el===syrSize) buildTicks(); recalc(); });
+        });
       });
 
+      // Unit dropdown
+      doseUnit.addEventListener('change', (e)=>{
+        const prev = (e.oldUnit || (doseUnit.dataset.prev || 'mcg'));
+        const next = doseUnit.value;
+        convertOnUnitChange(prev, next);
+        doseUnit.dataset.prev = next;
+        togglePresetRows();
+        // clear preset selection when switching unit
+        document.querySelectorAll('.preset').forEach(b=>b.setAttribute('aria-pressed','false'));
+        recalc();
+      });
+
+      // Wire preset rows
+      wirePresets(presetsMcg);
+      wirePresets(presetsMg);
+
       // Init
+      doseUnit.dataset.prev = doseUnit.value; // remember starting unit
       buildTicks();
-      refreshPresets();
+      togglePresetRows();
       recalc();
     });
   </script>
