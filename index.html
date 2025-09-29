@@ -103,6 +103,7 @@
   .subq-overlay{
     position:absolute;
     pointer-events:none; /* do not block UI */
+    /* Positioned WITHIN the image, scales with it */
     left:var(--b-left); right:var(--b-right); top:var(--b-top);
     height:var(--b-height);
     display:flex; align-items:center; justify-content:center;
@@ -123,16 +124,12 @@
     position:absolute;top:-8px;width:3px;height:calc(100% + 16px);
     background:var(--accent-2);border-radius:2px;box-shadow:0 0 0 2px rgba(37,208,166,.15)
   }
+
   .subq-ticks{position:absolute;left:8px;right:8px;bottom:6px;height:16px}
-  .subq-tick{position:absolute;width:1px;background:#3a3d47;opacity:.9}
-  .subq-tick.min{height:6px}
-  .subq-tick.mid{height:9px}
-  .subq-tick.maj{height:12px}
-  .subq-num{
-    position:absolute;bottom:-16px;
-    font-size:clamp(10px, 0.95vw, 14px);
-    color:#cfd4df;transform:translateX(-50%);white-space:nowrap;letter-spacing:0.02em
-  }
+  .subq-tick{position:absolute;width:1px;background:#3a3d47;height:8px;opacity:.9}
+  .subq-tick.major{height:12px}
+  .subq-num{position:absolute;bottom:-14px;font-size:11px;color:#9aa0ab;transform:translateX(-50%)}
+  .subq-knob{display:none} /* no cap in SUBQ mode */
 
   /* Debug HUD */
   .hud{
@@ -263,6 +260,7 @@
         <div class="syringe" aria-live="polite">
           <div class="tube" id="tube">
             <div class="fill" id="fill"></div>
+            <!-- Cursor only in Classic -->
             <div class="cursor" id="cursor" aria-hidden="true"></div>
           </div>
           <div class="ticks" id="ticks" aria-hidden="true"></div>
@@ -369,7 +367,9 @@ document.addEventListener('DOMContentLoaded', () => {
   tabClassic.addEventListener('click',()=>setTab('classic'));
   setTab('subq');
 
-  // Build tick marks for Classic
+  /* ---------- Ticks + labels for SUBQ image overlay ---------- */
+  const MIN_LABEL_GAP_PX = 13; // only for U-100 (smart anti-overlap)
+
   function buildTicksClassic(){
     ticks.innerHTML='';
     const max=parseInt(syrSize.value,10)||30;
@@ -385,56 +385,55 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // Build tick marks for SUBQ overlay with exact labels per syringe size
   function buildTicksSubq(){
     subqTicks.innerHTML='';
     const max = parseInt(syrSize.value,10) || 30;
 
-    // Label sets required:
-    let labelSet = [];
-    if (max === 100){
-      for (let i=0;i<=100;i+=10) labelSet.push(i); // 0,10,...100
-    } else if (max === 50){
-      labelSet = [0,10,15,20,25,30,35,40,45,50];
-    } else { // 30
-      labelSet = [0,10,15,20,25,30];
+    // Tick density
+    const minorStep = (max===100) ? 2 : 1;  // U-100 = 4 minors per 10; U-50/U-30 = every unit
+    const isMajor = (i)=> {
+      if (max===100) return i % 10 === 0;
+      // U-50/U-30: major every 5 units
+      return i % 5 === 0;
+    };
+
+    // Draw ticks
+    for(let i=0;i<=max;i+=minorStep){
+      const t=document.createElement('div');
+      t.className='subq-tick'+(isMajor(i)?' major':'');
+      t.style.left=(i/max*100)+'%';
+      t.style.transform='translateX(-0.5px)';
+      subqTicks.appendChild(t);
     }
 
-    // Tick step rules:
-    const minorStep = (max===100) ? 2 : 1;         // fine ticks
-    const midEvery  = 5;                           // mid tick at 5s
-    // Major tick when it's a labeled position
-    const isMajor = (v) => labelSet.includes(v);
+    // Labels
+    const rect = subqTicks.getBoundingClientRect();
+    const placeLabel = (value) => {
+      const n=document.createElement('div');
+      n.className='subq-num';
+      n.style.left=(value/max*100)+'%';
+      n.textContent=String(value);
+      subqTicks.appendChild(n);
+    };
 
-    // Anti-overlap for labels (in px)
-    const track = subqOverlay.querySelector('.subq-track');
-    const padL = 8, padR = 8;
-    const widthPx = Math.max(0, track.clientWidth - (padL + padR));
-    const pxPerUnit = widthPx / max;
-    const minLabelGap = 13;  // adjust if needed
-    let lastLabelX = -Infinity;
-
-    for(let i=0;i<=max;i+=minorStep){
-      const pct = (i/max)*100;
-
-      const d = document.createElement('div');
-      d.className = 'subq-tick min';
-      if (i%midEvery===0) d.className = 'subq-tick mid';
-      if (isMajor(i))     d.className = 'subq-tick maj';
-      d.style.left = `calc(${pct}% - 0.5px)`;
-      subqTicks.appendChild(d);
-
-      if (isMajor(i)){
-        const xPx = i * pxPerUnit;
-        if (xPx - lastLabelX >= minLabelGap || i===0){
-          const n = document.createElement('div');
-          n.className = 'subq-num';
-          n.style.left = pct + '%';
-          n.textContent = String(i);
-          subqTicks.appendChild(n);
-          lastLabelX = xPx;
+    if (max===100){
+      // Smart anti-overlap for U-100
+      const candidates = [];
+      for (let v=0; v<=100; v+=10) candidates.push(v);
+      let lastX = -Infinity;
+      candidates.forEach(v=>{
+        const x = (v/max)*rect.width;
+        if (x - lastX >= MIN_LABEL_GAP_PX){
+          placeLabel(v);
+          lastX = x;
         }
-      }
+      });
+    } else if (max===50){
+      // Exact labels, no anti-overlap
+      [0,10,15,20,25,30,35,40,45,50].forEach(placeLabel);
+    } else if (max===30){
+      // Exact labels, no anti-overlap
+      [0,10,15,20,25,30].forEach(placeLabel);
     }
   }
 
@@ -568,7 +567,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const stepPct=0.25, stepPx=1;
 
   const refreshHUD=()=>{
-    hudVals.textContent = `--b-left: ${L.toFixed(2)}% | --b-right: ${R.toFixed(2)}% | --b-top: ${T.toFixed(2)}% | --b-height: ${H.toFixed(2)}% | --barrel-shift: ${S.toFixed(1)}px`;
+    $('hudVals').textContent = `--b-left: ${L.toFixed(2)}% | --b-right: ${R.toFixed(2)}% | --b-top: ${T.toFixed(2)}% | --b-height: ${H.toFixed(2)}% | --barrel-shift: ${S.toFixed(1)}px`;
   };
 
   document.addEventListener('keydown',(e)=>{
