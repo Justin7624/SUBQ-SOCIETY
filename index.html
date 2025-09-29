@@ -37,14 +37,12 @@
     }
     .input:focus{border-color:#5c6ae6;outline-color:#3d44a3}
 
-    /* Dose input + unit toggle; make dose input wider (mobile fix) */
     .dose-group{display:grid;grid-template-columns:1fr 110px;gap:8px}
     .unit-select{width:110px;min-height:46px;font-size:16px}
     .field.dose{grid-column:span 8}
     @media (max-width:900px){ .field.dose{grid-column:span 12} }
     @media (max-width:420px){ .dose-group{grid-template-columns:1fr 96px}.unit-select{width:96px} }
 
-    /* Make numbers always visible on Android/iOS */
     input[type="number"]{appearance:textfield;-webkit-appearance:textfield;-webkit-text-fill-color:var(--ink);color:var(--ink);background:#0d0e12}
     input[type="number"]::-webkit-outer-spin-button,
     input[type="number"]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
@@ -76,16 +74,15 @@
       aspect-ratio:1413/768;
       background:#0c0d11 url('IMG_20250928_220440.png') center/contain no-repeat;
       border:1px solid #272930;border-radius:14px;padding:12px;margin-top:8px;
-      /* ensure this area never blocks clicks outside it */
       pointer-events:none;
     }
-    /* Only the internal barrel overlays render; they don't need clicks either */
     .brand-syringe *{pointer-events:none}
 
-    /* Barrel window aligned to PNG’s real barrel */
+    /* Barrel window aligned to PNG’s real barrel
+       TUNABLE: adjust these four values by ±0.2–0.4% if needed */
     .brand-syringe .barrel{
-      --b-left: 39.8%;   /* left wall of barrel */
-      --b-right: 33.0%;  /* just before plunger head */
+      --b-left: 41.0%;   /* start slightly further right so fill begins on inner-tube line */
+      --b-right: 31.8%;  /* extend further right so 100% reaches line before plunger */
       --b-top: 46.1%;
       --b-h: 10.6%;
       position:absolute;left:var(--b-left);right:var(--b-right);top:var(--b-top);height:var(--b-h);
@@ -105,7 +102,6 @@
       transform:translateX(0);
     }
 
-    /* View toggle */
     .view-toggle{display:flex;gap:8px;margin:6px 0 12px}
     .view-toggle .seg{padding:8px 12px;border:1px solid #2a2c33;background:#0d0e12;color:var(--ink);border-radius:10px;cursor:pointer;font-weight:600}
     .view-toggle .seg[aria-pressed="true"], .view-toggle .seg:hover{border-color:#4d8cff;background:#111424}
@@ -121,7 +117,6 @@
   </style>
 </head>
 <body>
-  <!-- Hero banner -->
   <img src="IMG_20250926_184644.png" alt="SUBQ SOCIETY – THE UNDERGROUND PROTOCOL" style="max-width:100%;height:auto;display:block;margin:0 auto 12px auto;">
 
   <div class="wrap">
@@ -156,7 +151,7 @@
             </select>
           </div>
 
-          <!-- Desired dose (mobile-friendly wider input) -->
+          <!-- Desired dose -->
           <div class="field sm dose">
             <label for="doseVal">Desired dose</label>
             <div class="dose-group">
@@ -171,16 +166,12 @@
 
         <div style="margin-top:10px">
           <label>Quick select dose</label>
-
-          <!-- mcg presets -->
           <div id="presets-mcg" class="btns" role="group" aria-label="Preset doses (mcg)" style="display:none">
             <button class="pill preset" data-dose="50" data-unit="mcg" aria-pressed="true">50 mcg</button>
             <button class="pill preset" data-dose="100" data-unit="mcg">100 mcg</button>
             <button class="pill preset" data-dose="250" data-unit="mcg">250 mcg</button>
             <button class="pill preset" data-dose="500" data-unit="mcg">500 mcg</button>
           </div>
-
-          <!-- mg presets -->
           <div id="presets-mg" class="btns" role="group" aria-label="Preset doses (mg)">
             <button class="pill preset" data-dose="1" data-unit="mg" aria-pressed="true">1 mg</button>
             <button class="pill preset" data-dose="2" data-unit="mg">2 mg</button>
@@ -288,7 +279,7 @@
       const presetsMcg = $('presets-mcg');
       const presetsMg  = $('presets-mg');
 
-      // View toggle buttons (declare ONCE)
+      // View toggle
       const viewBrandBtn = $('viewBrand');
       const viewClassicBtn = $('viewClassic');
       const classicVisual = $('classicVisual');
@@ -297,7 +288,6 @@
       const fmt=(n,d=2)=>Number.isFinite(n)?n.toFixed(d).replace(/\.0+$/,'').replace(/(\.[1-9]*)0+$/,'$1'):'—';
 
       function buildTicks(){
-        // Classic ticks
         if (ticks) {
           ticks.innerHTML='';
           const max=parseInt(syrSize.value,10)||30;
@@ -312,7 +302,6 @@
             ticks.appendChild(t);
           }
         }
-        // Brand ticks
         drawBrandTicks(parseInt(syrSize.value,10)||30);
       }
 
@@ -326,7 +315,6 @@
         const minor = (maxUnits <= 30) ? 1 : 5;
         const major = (maxUnits <= 30) ? 5 : 10;
 
-        // base line inside barrel
         const base = document.createElementNS('http://www.w3.org/2000/svg','line');
         base.setAttribute('x1','0'); base.setAttribute('y1','70');
         base.setAttribute('x2',String(W)); base.setAttribute('y2','70');
@@ -366,7 +354,7 @@
       function setBrandCursorPercent(pct){
         if (!brandCursor) return;
         const p = Math.max(0,Math.min(100,pct));
-        brandCursor.style.left = p + '%';   // relative to barrel width
+        brandCursor.style.left = p + '%';
       }
 
       function getDesiredDoseMcg(){
@@ -380,8 +368,8 @@
         const ml=parseFloat(diluentMl.value);
         const maxUnits=parseInt(syrSize.value,10)||30;
 
-        const conc = (mg>0 && ml>0) ? (mg/ml) : NaN;         // mg/mL
-        const mcgPerUnitVal = Number.isFinite(conc) ? conc*10 : NaN; // mcg per unit
+        const conc = (mg>0 && ml>0) ? (mg/ml) : NaN;
+        const mcgPerUnitVal = Number.isFinite(conc) ? conc*10 : NaN;
         const mgPerUnitVal  = Number.isFinite(mcgPerUnitVal) ? mcgPerUnitVal/1000 : NaN;
 
         const desiredMcg = getDesiredDoseMcg();
@@ -407,11 +395,9 @@
 
         const pct=Number.isFinite(units)?Math.min(100,Math.max(0,units/maxUnits*100)):0;
 
-        // Classic
         if (fill) fill.style.width = pct+'%';
         if (cursor) cursor.style.left = `calc(${pct}% - 1px)`;
 
-        // Brand (inside barrel)
         setBrandFillPercent(pct);
         setBrandCursorPercent(pct);
 
@@ -451,19 +437,19 @@
 
       function setView(which){
         if (which==='brand'){
-          brandVisual.style.display='block';
-          classicVisual.style.display='none';
-          viewBrandBtn.setAttribute('aria-pressed','true');
-          viewClassicBtn.setAttribute('aria-pressed','false');
+          $('brandVisual').style.display='block';
+          $('classicVisual').style.display='none';
+          $('viewBrand').setAttribute('aria-pressed','true');
+          $('viewClassic').setAttribute('aria-pressed','false');
         } else {
-          brandVisual.style.display='none';
-          classicVisual.style.display='block';
-          viewBrandBtn.setAttribute('aria-pressed','false');
-          viewClassicBtn.setAttribute('aria-pressed','true');
+          $('brandVisual').style.display='none';
+          $('classicVisual').style.display='block';
+          $('viewBrand').setAttribute('aria-pressed','false');
+          $('viewClassic').setAttribute('aria-pressed','true');
         }
       }
-      viewBrandBtn.addEventListener('click', ()=> setView('brand'));
-      viewClassicBtn.addEventListener('click', ()=> setView('classic'));
+      $('viewBrand').addEventListener('click', ()=> setView('brand'));
+      $('viewClassic').addEventListener('click', ()=> setView('classic'));
 
       ['input','change'].forEach(evt=>{
         [vialMg,diluentMl,syrSize,doseVal].forEach(el=>{
@@ -486,7 +472,6 @@
         recalc();
       });
 
-      // Init
       wirePresets(presetsMcg);
       wirePresets(presetsMg);
       doseUnit.dataset.prev = doseUnit.value;
