@@ -74,19 +74,30 @@
       aspect-ratio:1413/768;
       background:#0c0d11 url('IMG_20250928_220440.png') center/contain no-repeat;
       border:1px solid #272930;border-radius:14px;padding:12px;margin-top:8px;
-      pointer-events:none;
+      pointer-events:none; /* let clicks pass through the image */
     }
     .brand-syringe *{pointer-events:none}
 
-    /* Barrel window aligned to PNG’s real barrel (tuned) */
+    /* Barrel window aligned to PNG’s real barrel */
     .brand-syringe .barrel{
-      --b-left: 30.0%;   /* shifted left */
-      --b-right: 30.2%;  /* extended right */
-      --b-top: 46.1%;
-      --b-h: 10.6%;
-      position:absolute;left:var(--b-left);right:var(--b-right);top:var(--b-top);height:var(--b-h);
+      /* Coarse anchors (percent) */
+      --b-left: 39.9%;
+      --b-right: 30.2%;
+
+      /* Fine nudge (pixels). Negative = move left, Positive = move right */
+      --barrel-shift: 0px;
+
+      position:absolute;
+      left: var(--b-left);
+      right: var(--b-right);
+      top: 46.1%;
+      height: 10.6%;
       border-radius:8px;overflow:hidden;
+
+      /* Apply the fine nudge after the % positioning */
+      transform: translateX(var(--barrel-shift));
     }
+
     .brand-syringe .brand-fill{
       position:absolute;left:0;top:0;bottom:0;width:0%;
       background:linear-gradient(90deg, var(--accent), #5b9dff);
@@ -113,9 +124,24 @@
     .warn{color:var(--error);font-weight:700}
     footer{margin-top:26px;color:var(--muted);font-size:12px}
     a{color:#8fb6ff}
+
+    /* Debug mode */
+    body.debug .brand-syringe .barrel{
+      outline:2px dashed rgba(37,208,166,.7);
+      background:rgba(255,255,255,.04);
+    }
+    .debug-hud{
+      position:fixed;right:10px;bottom:10px;background:#0c0d11;border:1px solid #2a2c33;
+      border-radius:10px;padding:8px 10px;font-size:12px;color:#cfe;
+      box-shadow:0 6px 20px rgba(0,0,0,.35);display:none;z-index:9999
+    }
+    body.debug .debug-hud{display:block}
+    .debug-hud kbd{background:#111425;border:1px solid #2a2c33;border-radius:6px;padding:1px 5px;margin:0 2px;font-size:11px}
+    .debug-hud .vals{font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace}
   </style>
 </head>
 <body>
+  <!-- Hero banner -->
   <img src="IMG_20250926_184644.png" alt="SUBQ SOCIETY – THE UNDERGROUND PROTOCOL" style="max-width:100%;height:auto;display:block;margin:0 auto 12px auto;">
 
   <div class="wrap">
@@ -240,6 +266,14 @@
     </div>
   </div>
 
+  <!-- Debug HUD -->
+  <div class="debug-hud" id="debugHud" aria-live="polite">
+    <div><strong>Debug mode</strong> — Press <kbd>D</kbd> to toggle</div>
+    <div>Move: <kbd>←</kbd>/<kbd>→</kbd> (hold <kbd>Shift</kbd> for x4)</div>
+    <div>Left%: <kbd>;</kbd>/<kbd>'</kbd> &nbsp; Right%: <kbd>[</kbd>/<kbd>]</kbd></div>
+    <div class="vals" id="debugVals"></div>
+  </div>
+
   <script>
     document.addEventListener('DOMContentLoaded', () => {
       const $ = (id) => document.getElementById(id);
@@ -271,6 +305,7 @@
       const brandTicks = $('brandTicks');
       const brandFill = $('brandFill');
       const brandCursor = $('brandCursor');
+      const brandBarrel = $('brandBarrel');
 
       // Preset rows
       const presetsMcg = $('presets-mcg');
@@ -282,10 +317,28 @@
       const brandVisual = $('brandVisual');
       const classicVisual = $('classicVisual');
 
+      // Debug
+      const debugHud = $('debugHud');
+      const debugVals = $('debugVals');
+      let debugMode = false;
+      let bLeft = 39.9;   // %
+      let bRight = 30.2;  // %
+      let shiftPx = 0;    // px
+
       const clamp=(n,min,max)=>Math.min(max,Math.max(min,n));
       const fmt=(n,d=2)=>Number.isFinite(n)?n.toFixed(d).replace(/\.0+$/,'').replace(/(\.[1-9]*)0+$/,'$1'):'—';
 
+      function applyBarrelVars(){
+        brandBarrel.style.setProperty('--b-left', bLeft + '%');
+        brandBarrel.style.setProperty('--b-right', bRight + '%');
+        brandBarrel.style.setProperty('--barrel-shift', shiftPx + 'px');
+        if (debugVals) {
+          debugVals.textContent = `--b-left: ${bLeft.toFixed(2)}%  |  --b-right: ${bRight.toFixed(2)}%  |  --barrel-shift: ${shiftPx.toFixed(1)}px`;
+        }
+      }
+
       function buildTicks(){
+        // Classic ticks
         if (ticks) {
           ticks.innerHTML='';
           const max=parseInt(syrSize.value,10)||30;
@@ -449,6 +502,7 @@
       viewBrandBtn.addEventListener('click', ()=> setView('brand'));
       viewClassicBtn.addEventListener('click', ()=> setView('classic'));
 
+      // Events
       ['input','change'].forEach(evt=>{
         [vialMg,diluentMl,syrSize,doseVal].forEach(el=>{
           el.addEventListener(evt,()=>{
@@ -477,6 +531,31 @@
       togglePresetRows();
       setView('brand');
       recalc();
+
+      /* ---------- Debug mode ---------- */
+      function toggleDebug(){
+        debugMode = !debugMode;
+        document.body.classList.toggle('debug', debugMode);
+        if (debugMode) applyBarrelVars();
+      }
+      document.addEventListener('keydown', (e)=>{
+        if (e.key === 'd' || e.key === 'D'){
+          toggleDebug();
+          return;
+        }
+        if (!debugMode) return;
+
+        const mult = e.shiftKey ? 4 : 1;
+        if (e.key === 'ArrowLeft'){ shiftPx -= 2*mult; applyBarrelVars(); e.preventDefault(); }
+        if (e.key === 'ArrowRight'){ shiftPx += 2*mult; applyBarrelVars(); e.preventDefault(); }
+        if (e.key === ';'){ bLeft = Math.max(0, bLeft - 0.1*mult); applyBarrelVars(); e.preventDefault(); }
+        if (e.key === "'"){ bLeft = Math.min(100, bLeft + 0.1*mult); applyBarrelVars(); e.preventDefault(); }
+        if (e.key === '['){ bRight = Math.max(0, bRight - 0.1*mult); applyBarrelVars(); e.preventDefault(); }
+        if (e.key === ']'){ bRight = Math.min(100, bRight + 0.1*mult); applyBarrelVars(); e.preventDefault(); }
+      });
+
+      // Initialize debug values (hidden until D is pressed)
+      applyBarrelVars();
     });
   </script>
 </body>
