@@ -78,11 +78,10 @@
     }
     .brand-syringe *{pointer-events:none}
 
-    /* Barrel window aligned to PNG’s real barrel
-       TUNABLE: adjust these four values by ±0.2–0.4% if needed */
+    /* Barrel window aligned to PNG’s real barrel (tuned) */
     .brand-syringe .barrel{
-      --b-left: 41.0%;   /* start slightly further right so fill begins on inner-tube line */
-      --b-right: 31.8%;  /* extend further right so 100% reaches line before plunger */
+      --b-left: 40.4%;   /* start a bit more left */
+      --b-right: 30.8%;  /* extend farther right */
       --b-top: 46.1%;
       --b-h: 10.6%;
       position:absolute;left:var(--b-left);right:var(--b-right);top:var(--b-top);height:var(--b-h);
@@ -269,8 +268,6 @@
       const cursor = $('cursor');
 
       // Brand elements
-      const brandVisual = $('brandVisual');
-      const brandBarrel = $('brandBarrel');
       const brandTicks = $('brandTicks');
       const brandFill = $('brandFill');
       const brandCursor = $('brandCursor');
@@ -282,6 +279,7 @@
       // View toggle
       const viewBrandBtn = $('viewBrand');
       const viewClassicBtn = $('viewClassic');
+      const brandVisual = $('brandVisual');
       const classicVisual = $('classicVisual');
 
       const clamp=(n,min,max)=>Math.min(max,Math.max(min,n));
@@ -437,19 +435,19 @@
 
       function setView(which){
         if (which==='brand'){
-          $('brandVisual').style.display='block';
-          $('classicVisual').style.display='none';
-          $('viewBrand').setAttribute('aria-pressed','true');
-          $('viewClassic').setAttribute('aria-pressed','false');
+          brandVisual.style.display='block';
+          classicVisual.style.display='none';
+          viewBrandBtn.setAttribute('aria-pressed','true');
+          viewClassicBtn.setAttribute('aria-pressed','false');
         } else {
-          $('brandVisual').style.display='none';
-          $('classicVisual').style.display='block';
-          $('viewBrand').setAttribute('aria-pressed','false');
-          $('viewClassic').setAttribute('aria-pressed','true');
+          brandVisual.style.display='none';
+          classicVisual.style.display='block';
+          viewBrandBtn.setAttribute('aria-pressed','false');
+          viewClassicBtn.setAttribute('aria-pressed','true');
         }
       }
-      $('viewBrand').addEventListener('click', ()=> setView('brand'));
-      $('viewClassic').addEventListener('click', ()=> setView('classic'));
+      viewBrandBtn.addEventListener('click', ()=> setView('brand'));
+      viewClassicBtn.addEventListener('click', ()=> setView('classic'));
 
       ['input','change'].forEach(evt=>{
         [vialMg,diluentMl,syrSize,doseVal].forEach(el=>{
