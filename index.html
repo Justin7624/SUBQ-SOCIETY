@@ -396,15 +396,15 @@ document.addEventListener('DOMContentLoaded', () => {
     // - U-50 : 1-unit minis, majors every 5
     // - U-30 : 1-unit minis, majors every 5
     const minorStep = (max===100) ? 2 : 1;
-    const majorStep = (max===100) ? 10 : (max<=30 ? 5 : 5);
+    const majorStep = (max===100) ? 10 : 5;
 
     const track = subqOverlay.querySelector('.subq-track');
     const padL = 8, padR = 8;  // match .subq-ticks left/right
     const widthPx = Math.max(0, track.clientWidth - (padL + padR));
     const pxPerUnit = widthPx / max;
 
-    // Minimum gap between printed numbers (in px)
-    const minLabelGap = 13;
+    // Minimum gap between printed numbers (in px) — apply to ALL sizes
+    const minLabelGap = 15;
     let lastLabelX = -Infinity;
 
     // Draw minor/mid/major ticks
@@ -420,25 +420,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
       subqTicks.appendChild(tick);
 
-      // Labels: U-100 only at 10s with anti-overlap. U-30/50 follow majors (no anti-overlap).
+      // Labels:
+      // - U-100 at 10s
+      // - U-50/U-30 at majors (every 5)
       const showNumber = (max===100) ? (i%10===0) : (i%majorStep===0);
       if (showNumber){
-        if (max===100){
-          const xPx = i * pxPerUnit;
-          if (xPx - lastLabelX >= minLabelGap || i===0){
-            const lab = document.createElement('div');
-            lab.className = 'subq-num';
-            lab.style.left = (x) + '%';
-            lab.textContent = String(i);
-            subqTicks.appendChild(lab);
-            lastLabelX = xPx;
-          }
-        } else {
+        const xPx = i * pxPerUnit;
+        if (xPx - lastLabelX >= minLabelGap || i===0){
           const lab = document.createElement('div');
           lab.className = 'subq-num';
           lab.style.left = (x) + '%';
           lab.textContent = String(i);
           subqTicks.appendChild(lab);
+          lastLabelX = xPx;
         }
       }
     }
