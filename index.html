@@ -103,7 +103,6 @@
   .subq-overlay{
     position:absolute;
     pointer-events:none; /* do not block UI */
-    /* Positioned WITHIN the image, scales with it */
     left:var(--b-left); right:var(--b-right); top:var(--b-top);
     height:var(--b-height);
     display:flex; align-items:center; justify-content:center;
@@ -124,17 +123,15 @@
     position:absolute;top:-8px;width:3px;height:calc(100% + 16px);
     background:var(--accent-2);border-radius:2px;box-shadow:0 0 0 2px rgba(37,208,166,.15)
   }
-
-  /* tick rail inside SUBQ track */
   .subq-ticks{position:absolute;left:8px;right:8px;bottom:6px;height:16px}
   .subq-tick{position:absolute;width:1px;background:#3a3d47;opacity:.9}
-  .subq-tick.minor{height:6px}
+  .subq-tick.min{height:6px}
   .subq-tick.mid{height:9px}
-  .subq-tick.major{height:12px}
+  .subq-tick.maj{height:12px}
   .subq-num{
-    position:absolute;bottom:-14px;
-    font-size:clamp(10px,1.2vw,14px);
-    color:#9aa0ab;transform:translateX(-50%)
+    position:absolute;bottom:-16px;
+    font-size:clamp(10px, 0.95vw, 14px);
+    color:#cfd4df;transform:translateX(-50%);white-space:nowrap;letter-spacing:0.02em
   }
 
   /* Debug HUD */
@@ -266,7 +263,6 @@
         <div class="syringe" aria-live="polite">
           <div class="tube" id="tube">
             <div class="fill" id="fill"></div>
-            <!-- Cursor only in Classic -->
             <div class="cursor" id="cursor" aria-hidden="true"></div>
           </div>
           <div class="ticks" id="ticks" aria-hidden="true"></div>
@@ -334,6 +330,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const potencyUnitLabelC = $('potencyUnitLabelC');
 
   // SUBQ overlay elements
+  const subqOverlay = $('subqOverlay');
   const subqFill    = $('subqFill');
   const subqCursor  = $('subqCursor'); // thin green bar
   const subqTicks   = $('subqTicks');
@@ -372,7 +369,7 @@ document.addEventListener('DOMContentLoaded', () => {
   tabClassic.addEventListener('click',()=>setTab('classic'));
   setTab('subq');
 
-  // Build tick marks: Classic
+  // Build tick marks for Classic
   function buildTicksClassic(){
     ticks.innerHTML='';
     const max=parseInt(syrSize.value,10)||30;
@@ -388,50 +385,56 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // Build tick marks: SUBQ overlay
+  // Build tick marks for SUBQ overlay with anti-overlap labels
   function buildTicksSubq(){
     subqTicks.innerHTML='';
-    const max=parseInt(syrSize.value,10)||30;
+    const max = parseInt(syrSize.value,10) || 30;
 
-    // For U-100: 4 ticks between labels -> ticks every 2 units,
-    // medium tick at 5s, labels at 10s.
-    if (max === 100){
-      for(let i=0;i<=100;i+=2){
-        const t=document.createElement('div');
-        let cls='minor';
-        if(i%10===0) cls='major';
-        else if(i%5===0) cls='mid';
-        t.className='subq-tick '+cls;
-        t.style.left=(i/100*100)+'%';
-        t.style.transform='translateX(-0.5px)';
-        subqTicks.appendChild(t);
+    // Minor tick spacing:
+    // - U-100: 2-unit minis (4 between each labeled 10)
+    // - U-50 : 1-unit minis, majors every 5
+    // - U-30 : 1-unit minis, majors every 5
+    const minorStep = (max===100) ? 2 : 1;
+    const majorStep = (max===100) ? 10 : (max<=30 ? 5 : 5);
 
-        if(i%10===0){
-          const n=document.createElement('div');
-          n.className='subq-num';
-          n.style.left=(i/100*100)+'%';
-          n.textContent=String(i);
-          subqTicks.appendChild(n);
+    const track = subqOverlay.querySelector('.subq-track');
+    const padL = 8, padR = 8;  // match .subq-ticks left/right
+    const widthPx = Math.max(0, track.clientWidth - (padL + padR));
+    const pxPerUnit = widthPx / max;
+
+    // Minimum gap between printed numbers (in px)
+    // This prevents crowding at 100% zoom on smaller screens.
+    const minLabelGap = 18;   // try 18–22px; adjust to taste
+    let lastLabelX = -Infinity;
+
+    // Draw minor ticks at every 'minorStep', mid-ticks at 5-unit marks (when sensible), majors at 'majorStep'
+    for(let i=0;i<=max;i+=minorStep){
+      const x = (i/max) * 100; // percent within ticks box
+
+      const tick = document.createElement('div');
+      tick.className = 'subq-tick min';
+      tick.style.left = `calc(${x}% - 0.5px)`;
+
+      // mid tick (half of a major step), only for U-100 -> at every 5
+      if (max===100 && i%5===0 && i%10!==0) tick.className = 'subq-tick mid';
+
+      // major tick
+      if (i%majorStep===0) tick.className = 'subq-tick maj';
+
+      subqTicks.appendChild(tick);
+
+      // Number labels only at 10s (or majors for 30/50). Use anti-overlap rule.
+      const showNumber = (max===100) ? (i%10===0) : (i%majorStep===0);
+      if (showNumber){
+        const xPx = i * pxPerUnit;
+        if (xPx - lastLabelX >= minLabelGap || i===0){
+          const lab = document.createElement('div');
+          lab.className = 'subq-num';
+          lab.style.left = (x) + '%';
+          lab.textContent = String(i);
+          subqTicks.appendChild(lab);
+          lastLabelX = xPx;
         }
-      }
-      return;
-    }
-
-    // For 30/50 we keep unit ticks (precise), label majors.
-    const major = (max<=30?5:10);
-    for(let i=0;i<=max;i++){
-      const t=document.createElement('div');
-      t.className='subq-tick'+(i%major===0?' major':' minor');
-      t.style.left=(i/max*100)+'%';
-      t.style.transform='translateX(-0.5px)';
-      subqTicks.appendChild(t);
-
-      if(i%major===0){
-        const n=document.createElement('div');
-        n.className='subq-num';
-        n.style.left=(i/max*100)+'%';
-        n.textContent=String(i);
-        subqTicks.appendChild(n);
       }
     }
   }
@@ -550,7 +553,6 @@ document.addEventListener('DOMContentLoaded', () => {
   togglePresetRows(); recalc();
 
   /* ----------------- Developer Mode (overlay inside image) ----------------- */
-  // Read/write CSS vars as % or px
   const getVar = (name, fallback) => {
     const v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
     if(!v) return fallback;
@@ -562,7 +564,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const setVarPx = (name, val) => document.documentElement.style.setProperty(name, Math.round(val)+'px');
   const pct = (n)=>Math.max(0,Math.min(100,n));
 
-  // Current values
   let L=getVar('--b-left',15), R=getVar('--b-right',19), T=getVar('--b-top',46.5), H=getVar('--b-height',13);
   let S=getVar('--barrel-shift',0); // px
   const stepPct=0.25, stepPx=1;
