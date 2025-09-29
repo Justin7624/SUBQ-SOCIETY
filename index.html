@@ -74,7 +74,7 @@
       aspect-ratio:1413/768;
       background:#0c0d11 url('IMG_20250928_220440.png') center/contain no-repeat;
       border:1px solid #272930;border-radius:14px;padding:12px;margin-top:8px;
-      pointer-events:none; /* let clicks pass through the image */
+      pointer-events:none;
     }
     .brand-syringe *{pointer-events:none}
 
@@ -83,19 +83,22 @@
       /* Coarse anchors (percent) */
       --b-left: 39.9%;
       --b-right: 30.2%;
+      --b-top: 46.1%;
+      --b-height: 10.6%;
 
-      /* Fine nudge (pixels). Negative = move left, Positive = move right */
-      --barrel-shift: 0px;
+      /* Fine nudges (pixels) */
+      --barrel-shift-x: 0px; /* left/right */
+      --barrel-shift-y: 0px; /* up/down   */
 
       position:absolute;
       left: var(--b-left);
       right: var(--b-right);
-      top: 46.1%;
-      height: 10.6%;
+      top: var(--b-top);
+      height: var(--b-height);
       border-radius:8px;overflow:hidden;
 
-      /* Apply the fine nudge after the % positioning */
-      transform: translateX(var(--barrel-shift));
+      /* Apply fine nudges after % positioning */
+      transform: translate(var(--barrel-shift-x), var(--barrel-shift-y));
     }
 
     .brand-syringe .brand-fill{
@@ -269,8 +272,9 @@
   <!-- Debug HUD -->
   <div class="debug-hud" id="debugHud" aria-live="polite">
     <div><strong>Debug mode</strong> — Press <kbd>D</kbd> to toggle</div>
-    <div>Move: <kbd>←</kbd>/<kbd>→</kbd> (hold <kbd>Shift</kbd> for x4)</div>
+    <div>Move: <kbd>←</kbd>/<kbd>→</kbd> & <kbd>↑</kbd>/<kbd>↓</kbd> (hold <kbd>Shift</kbd> = x4)</div>
     <div>Left%: <kbd>;</kbd>/<kbd>'</kbd> &nbsp; Right%: <kbd>[</kbd>/<kbd>]</kbd></div>
+    <div>Top%: <kbd>,</kbd>/<kbd>.</kbd> &nbsp; Height%: <kbd>-</kbd>/<kbd>=</kbd></div>
     <div class="vals" id="debugVals"></div>
   </div>
 
@@ -321,9 +325,10 @@
       const debugHud = $('debugHud');
       const debugVals = $('debugVals');
       let debugMode = false;
-      let bLeft = 39.9;   // %
-      let bRight = 30.2;  // %
-      let shiftPx = 0;    // px
+
+      // Coarse (percent) + fine (px) barrel controls
+      let bLeft = 39.9, bRight = 30.2, bTop = 46.1, bHeight = 10.6; // %
+      let shiftX = 0, shiftY = 0;                                   // px
 
       const clamp=(n,min,max)=>Math.min(max,Math.max(min,n));
       const fmt=(n,d=2)=>Number.isFinite(n)?n.toFixed(d).replace(/\.0+$/,'').replace(/(\.[1-9]*)0+$/,'$1'):'—';
@@ -331,9 +336,14 @@
       function applyBarrelVars(){
         brandBarrel.style.setProperty('--b-left', bLeft + '%');
         brandBarrel.style.setProperty('--b-right', bRight + '%');
-        brandBarrel.style.setProperty('--barrel-shift', shiftPx + 'px');
+        brandBarrel.style.setProperty('--b-top', bTop + '%');
+        brandBarrel.style.setProperty('--b-height', bHeight + '%');
+        brandBarrel.style.setProperty('--barrel-shift-x', shiftX + 'px');
+        brandBarrel.style.setProperty('--barrel-shift-y', shiftY + 'px');
         if (debugVals) {
-          debugVals.textContent = `--b-left: ${bLeft.toFixed(2)}%  |  --b-right: ${bRight.toFixed(2)}%  |  --barrel-shift: ${shiftPx.toFixed(1)}px`;
+          debugVals.textContent =
+            `left:${bLeft.toFixed(2)}%  right:${bRight.toFixed(2)}%  top:${bTop.toFixed(2)}%  height:${bHeight.toFixed(2)}%  ` +
+            `shiftX:${shiftX.toFixed(1)}px  shiftY:${shiftY.toFixed(1)}px`;
         }
       }
 
@@ -536,22 +546,31 @@
       function toggleDebug(){
         debugMode = !debugMode;
         document.body.classList.toggle('debug', debugMode);
+        // show/hide HUD
+        $('debugHud').style.display = debugMode ? 'block' : 'none';
         if (debugMode) applyBarrelVars();
       }
       document.addEventListener('keydown', (e)=>{
-        if (e.key === 'd' || e.key === 'D'){
-          toggleDebug();
-          return;
-        }
+        if (e.key === 'd' || e.key === 'D'){ toggleDebug(); return; }
         if (!debugMode) return;
 
         const mult = e.shiftKey ? 4 : 1;
-        if (e.key === 'ArrowLeft'){ shiftPx -= 2*mult; applyBarrelVars(); e.preventDefault(); }
-        if (e.key === 'ArrowRight'){ shiftPx += 2*mult; applyBarrelVars(); e.preventDefault(); }
+
+        // Fine pixel nudges
+        if (e.key === 'ArrowLeft'){ shiftX -= 2*mult; applyBarrelVars(); e.preventDefault(); }
+        if (e.key === 'ArrowRight'){ shiftX += 2*mult; applyBarrelVars(); e.preventDefault(); }
+        if (e.key === 'ArrowUp'){ shiftY -= 2*mult; applyBarrelVars(); e.preventDefault(); }
+        if (e.key === 'ArrowDown'){ shiftY += 2*mult; applyBarrelVars(); e.preventDefault(); }
+
+        // Coarse % anchors
         if (e.key === ';'){ bLeft = Math.max(0, bLeft - 0.1*mult); applyBarrelVars(); e.preventDefault(); }
         if (e.key === "'"){ bLeft = Math.min(100, bLeft + 0.1*mult); applyBarrelVars(); e.preventDefault(); }
         if (e.key === '['){ bRight = Math.max(0, bRight - 0.1*mult); applyBarrelVars(); e.preventDefault(); }
         if (e.key === ']'){ bRight = Math.min(100, bRight + 0.1*mult); applyBarrelVars(); e.preventDefault(); }
+        if (e.key === ','){ bTop = Math.max(0, bTop - 0.1*mult); applyBarrelVars(); e.preventDefault(); }
+        if (e.key === '.'){ bTop = Math.min(100, bTop + 0.1*mult); applyBarrelVars(); e.preventDefault(); }
+        if (e.key === '-'){ bHeight = Math.max(1, bHeight - 0.1*mult); applyBarrelVars(); e.preventDefault(); }
+        if (e.key === '='){ bHeight = Math.min(100, bHeight + 0.1*mult); applyBarrelVars(); e.preventDefault(); }
       });
 
       // Initialize debug values (hidden until D is pressed)
