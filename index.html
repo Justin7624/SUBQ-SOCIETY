@@ -2,164 +2,153 @@
 <html lang="en">
 <head>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Peptide Calculator</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
-
 <style>
-:root{
-  --bg:#0f0f12;--card:#15161a;--ink:#e7e7ea;--muted:#9aa0ab;
-  --accent:#7c5cff;--accent2:#25d0a6;--error:#ff6b6b;
+  :root{
+    --bg:#0f0f12;--card:#15161a;--ink:#e7e7ea;--muted:#9aa0ab;
+    --accent:#7c5cff;--accent-2:#25d0a6;--error:#ff6b6b;
+    /* SUBQ overlay percent box (relative to the image) */
+    --b-left:15%; --b-right:19%; --b-top:46.5%; --b-height:13%;
+    /* optional pixel nudge for the blue fill only (debug) */
+    --barrel-shift:0px;
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+    background:radial-gradient(1100px 700px at 100% -50%, #1b1c22 30%, #0f0f12 70%),var(--bg);
+    color:var(--ink)
+  }
+  .wrap{max-width:1080px;margin:auto;padding:24px}
+  header{display:flex;gap:14px;align-items:center;justify-content:space-between;margin-bottom:18px}
+  .brand{display:flex;gap:12px;align-items:center}
+  .logo{width:46px;height:46px;border-radius:8px;overflow:hidden;display:flex;align-items:center;justify-content:center;background:#0d0e12;border:1px solid #2a2c33}
+  .logo img{width:100%;height:100%;object-fit:contain;display:block}
+  h1{font-size:clamp(22px,3vw,32px);margin:0;font-weight:800;letter-spacing:-0.02em}
 
-  /* SUBQ overlay geometry (percent of image container) */
-  --b-left: 40.5%;
-  --b-right: 19.0%;
-  --b-top: 46.3%;
-  --b-height: 10.0%;
-  --barrel-shift: 0px; /* pixel nudge for the moving fill */
-}
-*{box-sizing:border-box}
-html{-webkit-text-size-adjust:100%}
-body{
-  margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
-  background:radial-gradient(1100px 700px at 100% -50%,#1b1c22 30%,#0f0f12 70%),var(--bg);
-  color:var(--ink)
-}
-.wrap{max-width:1080px;margin:auto;padding:24px}
-header{display:flex;gap:14px;align-items:center;justify-content:space-between;margin-bottom:18px}
-.brand{display:flex;gap:12px;align-items:center}
-.logo{width:46px;height:46px;border-radius:8px;overflow:hidden;display:flex;align-items:center;justify-content:center;background:#0d0e12;border:1px solid #2a2c33}
-.logo img{width:100%;height:100%;object-fit:contain;display:block}
-h1{font-size:clamp(22px,3vw,32px);margin:0;font-weight:800;letter-spacing:-0.02em}
-.card{background:linear-gradient(180deg,#1a1b21,#131419);border:1px solid #23242b;box-shadow:0 10px 30px rgba(0,0,0,.25),inset 0 1px 0 rgba(255,255,255,.03);border-radius:16px;padding:18px}
-.grid{display:grid;grid-template-columns:1fr;gap:16px}
-@media(min-width:900px){.grid{grid-template-columns:1.1fr .9fr}}
-label{display:block;font-size:12px;color:var(--muted);margin-bottom:6px}
-.row{display:grid;grid-template-columns:repeat(12,1fr);gap:10px}
-.field{grid-column:span 6}
-.field.sm{grid-column:span 4}
+  .card{background:linear-gradient(180deg, #1a1b21, #131419);border:1px solid #23242b;box-shadow:0 10px 30px rgba(0,0,0,.25), inset 0 1px 0 rgba(255,255,255,.03);border-radius:16px;padding:18px}
+  .grid{display:grid;grid-template-columns:1fr;gap:16px}
+  @media(min-width:900px){.grid{grid-template-columns:1.1fr .9fr}}
 
-.input{
-  width:100%;background:#0d0e12;color:var(--ink);border:1px solid #2a2c33;
-  border-radius:12px;padding:12px 14px;font-size:16px;line-height:1.3;min-height:46px;
-  caret-color:#fff;outline:2px solid transparent;outline-offset:2px;transition:border .15s ease,outline .15s ease
-}
-.input:focus{border-color:#5c6ae6;outline-color:#3d44a3}
+  label{display:block;font-size:12px;color:var(--muted);margin-bottom:6px}
+  .row{display:grid;grid-template-columns:repeat(12,1fr);gap:10px}
+  .field{grid-column:span 6}
+  .field.sm{grid-column:span 4}
 
-.dose-group{display:grid;grid-template-columns:1fr 110px;gap:8px}
-.unit-select{width:110px;min-height:46px;font-size:16px}
-.field.dose{grid-column:span 8}
-@media(max-width:900px){.field.dose{grid-column:span 12}}
-@media(max-width:420px){.dose-group{grid-template-columns:1fr 96px}.unit-select{width:96px}}
+  .input{
+    width:100%;background:#0d0e12;color:var(--ink);border:1px solid #2a2c33;border-radius:12px;
+    padding:12px 14px;font-size:16px;line-height:1.3;min-height:46px;caret-color:#fff;
+    outline:2px solid transparent;outline-offset:2px;transition:border .15s ease, outline .15s ease;text-align:left
+  }
+  .input:focus{border-color:#5c6ae6;outline-color:#3d44a3}
 
-input[type="number"]{appearance:textfield;-webkit-appearance:textfield;-webkit-text-fill-color:var(--ink);background:#0d0e12}
-input[type="number"]::-webkit-outer-spin-button,
-input[type="number"]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+  /* Desired dose wider on phones */
+  .field.dose { grid-column: span 8; }
+  @media (max-width:900px){ .field.dose { grid-column: span 12; } }
 
-.btns{display:flex;flex-wrap:wrap;gap:10px}
-button.pill{background:#0d0e12;border:1px solid #2a2c33;color:var(--ink);padding:10px 14px;border-radius:999px;cursor:pointer;font-weight:600}
-button.pill[aria-pressed="true"],button.pill:hover{border-color:#4d8cff;background:#111424}
+  .dose-group{display:grid;grid-template-columns:1fr 110px;gap:8px}
+  .unit-select{width:110px;min-height:46px;font-size:16px}
+  @media (max-width:420px){
+    .dose-group{grid-template-columns:1fr 96px}
+    .unit-select{width:96px}
+  }
 
-.muted{color:var(--muted)}
-.big{font-size:clamp(18px,3vw,24px);font-weight:800}
+  /* Number input visibility fixes */
+  input[type="number"]{appearance:textfield;-webkit-appearance:textfield;-webkit-text-fill-color:var(--ink);color:var(--ink);background-color:#0d0e12}
+  input[type="number"]::-webkit-outer-spin-button,
+  input[type="number"]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+  ::placeholder{color:var(--muted);opacity:.8}
 
-.note{font-size:13px;color:var(--muted)}
-.result{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:26px}
-.chip{background:#0c0d11;border:1px solid #2a2c33;border-radius:12px;padding:10px 12px}
-.chip .k{color:var(--muted);font-size:12px}
-.chip .v{font-weight:800;font-size:18px}
-.warn{color:var(--error);font-weight:700}
-footer{margin-top:26px;color:var(--muted);font-size:12px}
-a{color:#8fb6ff}
+  .btns{display:flex;flex-wrap:wrap;gap:10px}
+  button.pill{background:#0d0e12;border:1px solid #2a2c33;color:var(--ink);padding:10px 14px;border-radius:999px;cursor:pointer;font-weight:600}
+  button.pill[aria-pressed="true"],button.pill:hover{border-color:#4d8cff;background:#111424}
+  .muted{color:var(--muted)}
+  .big{font-size:clamp(18px,3vw,24px);font-weight:800}
 
-/* Classic bar visual */
-.syringe{background:#0c0d11;border:1px solid #272930;border-radius:14px;padding:18px}
-.syringe h3{margin:0 0 10px 0;font-size:18px}
-.tube{position:relative;height:36px;border-radius:18px;background:linear-gradient(180deg,#11131a,#0b0c10);border:1px solid #2a2c33;box-shadow:inset 0 2px 8px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.05)}
-.fill{position:absolute;left:0;top:0;bottom:0;width:0%;background:linear-gradient(90deg,var(--accent),#5b9dff);border-radius:18px;box-shadow:inset 0 0 12px rgba(255,255,255,.25),0 0 16px rgba(124,92,255,.45)}
-.cap{position:absolute;left:-8px;top:50%;translate:0 -50%;width:18px;height:18px;border-radius:50%;background:linear-gradient(180deg,#4e556a,#262a33);border:1px solid #6b7388}
-.ticks{position:relative;display:flex;justify-content:space-between;align-items:flex-start;margin-top:10px;padding:0 2px}
-.tick{position:relative;width:1px;background:#3a3d47}
-.tick.minor{height:10px;opacity:.55}
-.tick.major{height:16px}
-.tick .n{position:absolute;top:18px;left:50%;transform:translateX(-50%);font-size:12px;color:var(--muted)}
-.cursor{position:absolute;top:-8px;width:2px;background:var(--accent2);height:52px;border-radius:2px;box-shadow:0 0 0 2px rgba(37,208,166,.15)}
+  /* Classic syringe visual */
+  .syringe{background:#0c0d11;border:1px solid #272930;border-radius:14px;padding:18px}
+  .syringe h3{margin:0 0 10px 0;font-size:18px}
+  .tube{position:relative;height:36px;border-radius:18px;background:linear-gradient(180deg,#11131a,#0b0c10);border:1px solid #2a2c33;box-shadow:inset 0 2px 8px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.05)}
+  .fill{position:absolute;left:0;top:0;bottom:0;width:0%;background:linear-gradient(90deg, var(--accent), #5b9dff);border-radius:18px;box-shadow:inset 0 0 12px rgba(255,255,255,.25), 0 0 16px rgba(124,92,255,.45)}
+  .cap{position:absolute;left:-8px;top:50%;translate:0 -50%;width:18px;height:18px;border-radius:50%;background:linear-gradient(180deg,#4e556a,#262a33);border:1px solid #6b7388}
+  .ticks{position:relative;display:flex;justify-content:space-between;align-items:flex-start;margin-top:10px;padding:0 2px}
+  .tick{position:relative;width:1px;background:#3a3d47}
+  .tick.minor{height:10px;opacity:.55}
+  .tick.major{height:16px}
+  .tick .n{position:absolute;top:18px;left:50%;transform:translateX(-50%);font-size:12px;color:var(--muted)}
+  .cursor{position:absolute;top:-8px;width:2px;background:var(--accent-2);height:52px;border-radius:2px;box-shadow:0 0 0 2px rgba(37,208,166,.15)}
 
-/* VISUALS SWITCHER */
-.tabs{display:flex;gap:10px;margin-bottom:10px}
-.tabs button{border:1px solid #2a2c33;background:#0d0e12;color:var(--ink);padding:8px 12px;border-radius:999px;cursor:pointer}
-.tabs button[aria-pressed="true"]{background:#111424;border-color:#4d8cff}
+  .note{font-size:13px;color:var(--muted)}
+  .result{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:26px}
+  .chip{background:#0c0d11;border:1px solid #2a2c33;border-radius:12px;padding:10px 12px}
+  .chip .k{color:var(--muted);font-size:12px}
+  .chip .v{font-weight:800;font-size:18px}
+  .warn{color:var(--error);font-weight:700}
+  footer{margin-top:26px;color:var(--muted);font-size:12px}
+  a{color:#8fb6ff}
 
-/* SUBQ SYRINGE OVERLAY */
-.subq-figure{position:relative;background:#0c0d11;border:1px solid #272930;border-radius:14px;padding:10px}
-.subq-viewport{position:relative;overflow:hidden;border-radius:12px}
-.subq-viewport img{width:100%;height:auto;display:block}
-.overlay{
-  position:absolute;inset:0;pointer-events:none;
-}
-/* Barrel box */
-.barrel{
-  position:absolute;
-  left:var(--b-left); right:var(--b-right);
-  top:var(--b-top); height:var(--b-height);
-  display:grid;align-items:center;
-}
-/* Tracks (background) */
-.barrel-track{
-  width:100%;height:100%;
-  background:rgba(0,0,0,.55);
-  border:1px solid rgba(255,255,255,.15);
-  border-radius:10px;
-  box-shadow: inset 0 0 0 1px rgba(0,0,0,.4);
-}
+  /* Tabs */
+  .tabs{display:flex;gap:8px;margin-bottom:10px}
+  .tabs .pill{padding:8px 12px}
+  .tabs .pill[aria-pressed="true"]{background:#1a1d2b;border-color:#4d8cff}
 
-/* Ticks and labels */
-.scale{position:absolute;inset:0;display:flex;align-items:flex-end;justify-content:space-between;padding:0 12px 6px 12px}
-.scale .t{position:relative;width:1px;background:rgba(255,255,255,.3);height:50%}
-.scale .t.m{height:70%;background:rgba(255,255,255,.5)}
-.scale .t .n{position:absolute;top:calc(100% + 2px);left:50%;transform:translateX(-50%);font-size:12px;color:#a9b1c1}
+  /* SUBQ Syringe overlayed on the image */
+  .subq-card{background:linear-gradient(180deg, #1a1b21, #131419);border:1px solid #23242b;border-radius:16px;padding:18px}
+  .subq-wrapper{position:relative;display:block;width:100%;max-width:980px;margin:8px auto 0}
+  .subq-wrapper img{display:block;width:100%;height:auto;border-radius:10px}
+  .subq-overlay{
+    position:absolute;
+    pointer-events:none; /* do not block UI */
+    /* Positioned WITHIN the image, scales with it */
+    left:var(--b-left); right:var(--b-right); top:var(--b-top);
+    height:var(--b-height);
+    display:flex; align-items:center; justify-content:center;
+  }
+  .subq-track{
+    position:relative;width:100%;height:100%;
+    background:rgba(10,12,16,.55);
+    border:1px solid rgba(255,255,255,.08);
+    border-radius:16px; backdrop-filter: blur(2px);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.05), 0 0 0 1px rgba(0,0,0,.35);
+  }
+  .subq-fill{
+    position:absolute;left:calc(0px + var(--barrel-shift));top:2px;bottom:2px;width:0%;
+    background:linear-gradient(90deg,var(--accent),#5b9dff);
+    border-radius:14px; box-shadow:inset 0 0 10px rgba(255,255,255,.2),0 0 12px rgba(124,92,255,.35)
+  }
+  .subq-cursor{
+    position:absolute;top:-8px;width:3px;height:calc(100% + 16px);
+    background:var(--accent-2);border-radius:2px;box-shadow:0 0 0 2px rgba(37,208,166,.15)
+  }
+  .subq-ticks{position:absolute;left:8px;right:8px;bottom:6px;height:16px;display:flex;justify-content:space-between;align-items:flex-end}
+  .subq-tick{width:1px;background:#3a3d47;height:8px;opacity:.8}
+  .subq-tick.major{height:12px}
+  .subq-num{position:absolute;bottom:-14px;font-size:11px;color:#9aa0ab;transform:translateX(-50%)}
+  /* Hide “knob” only in SUBQ mode – we don’t render a cap/cursor knob there */
+  .subq-knob{display:none}
 
-/* Fill bar with cursor (no knob in SUBQ mode) */
-.fillbar{
-  position:absolute;left:0;top:0;bottom:0;
-  width:0%;
-  translate: var(--barrel-shift) 0; /* pixel nudge along X */
-  background:linear-gradient(90deg,var(--accent),#6aa6ff);
-  border-radius:10px;box-shadow:inset 0 0 10px rgba(255,255,255,.25),0 0 14px rgba(108,150,255,.35)
-}
-.cursor-subq{
-  position:absolute;top:-6px;width:2px;background:var(--accent2);height:calc(100% + 12px);border-radius:2px;box-shadow:0 0 0 2px rgba(37,208,166,.15)
-}
-
-/* Hide knob ball specifically for SUBQ mode */
-.subq-viewport .knob{display:none}
-
-/* DEBUG HUD */
-.hud{
-  position:sticky;bottom:10px;z-index:20;max-width:1080px;margin:16px auto 0;
-  font:13px/1.4 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
-  background:#0b0c10cc;border:1px solid #31323a;color:#d7fbe8;
-  padding:10px 12px;border-radius:10px;display:none
-}
-.hud kbd{
-  background:#1a1b22;border:1px solid #2f3240;border-radius:6px;padding:2px 6px;margin:0 2px;color:#b6c0ff;
-  box-shadow:inset 0 -1px 0 rgba(255,255,255,.04)
-}
-.hud.show{display:block}
-
-/* Hero banner spacing */
-.hero{max-width:100%;height:auto;display:block;margin:0 auto 12px}
-
-/* Title spacing tweak requested earlier */
-h2.section-title{margin:6px 0 12px}
+  /* Debug HUD */
+  .hud{
+    position:fixed;left:12px;bottom:12px;background:rgba(10,12,16,.85);
+    color:#dbe1ff;border:1px solid rgba(255,255,255,.1);border-radius:12px;
+    padding:10px 12px;font-size:12px;line-height:1.5;z-index:9999;display:none
+  }
+  .hud kbd{
+    background:#1e2435;border:1px solid #34405c;border-radius:6px;
+    padding:0 6px;margin:0 2px;font-family:ui-monospace, SFMono-Regular, Menlo, monospace;font-size:11px;color:#e6edff
+  }
+  .hud.show{display:block}
 </style>
 </head>
 <body>
 
-<!-- HERO -->
-<img class="hero" src="IMG_20250926_184644.png" alt="SUBQ SOCIETY – THE UNDERGROUND PROTOCOL">
+<!-- Hero banner (tight spacing) -->
+<img src="IMG_20250926_184644.png" alt="SUBQ SOCIETY – THE UNDERGROUND PROTOCOL"
+     style="max-width:100%;height:auto;display:block;margin:0 auto 12px auto">
 
 <div class="wrap">
   <header>
@@ -172,7 +161,7 @@ h2.section-title{margin:6px 0 12px}
   <div class="grid">
     <!-- LEFT: Inputs -->
     <section class="card" aria-labelledby="inputsTitle">
-      <h2 id="inputsTitle" class="big section-title">Setup</h2>
+      <h2 id="inputsTitle" class="big" style="margin:6px 0 12px">Setup</h2>
       <div class="row">
         <div class="field sm">
           <label for="vialMg">Peptide per vial (mg)</label>
@@ -190,12 +179,12 @@ h2.section-title{margin:6px 0 12px}
             <option value="100" selected>100-unit</option>
           </select>
         </div>
-
-        <!-- Desired dose -->
+        <!-- Desired dose (value + unit) -->
         <div class="field sm dose">
           <label for="doseVal">Desired dose</label>
           <div class="dose-group">
-            <input id="doseVal" class="input" type="number" step="0.001" min="0" value="0.5" inputmode="decimal" placeholder="Enter dose" />
+            <input id="doseVal" class="input" type="number" step="0.001" min="0" value="0.5"
+                   inputmode="decimal" placeholder="Enter dose" />
             <select id="doseUnit" class="input unit-select">
               <option value="mcg">mcg</option>
               <option value="mg" selected>mg</option>
@@ -206,92 +195,88 @@ h2.section-title{margin:6px 0 12px}
 
       <div style="margin-top:10px">
         <label>Quick select dose</label>
-
+        <!-- mcg presets -->
         <div id="presets-mcg" class="btns" role="group" aria-label="Preset doses (mcg)" style="display:none">
           <button class="pill preset" data-dose="50" data-unit="mcg">50 mcg</button>
           <button class="pill preset" data-dose="100" data-unit="mcg">100 mcg</button>
           <button class="pill preset" data-dose="250" data-unit="mcg">250 mcg</button>
           <button class="pill preset" data-dose="500" data-unit="mcg">500 mcg</button>
         </div>
-
+        <!-- mg presets -->
         <div id="presets-mg" class="btns" role="group" aria-label="Preset doses (mg)">
-          <button class="pill preset" data-dose="1" data-unit="mg">1 mg</button>
-          <button class="pill preset" data-dose="2" data-unit="mg">2 mg</button>
-          <button class="pill preset" data-dose="5" data-unit="mg" aria-pressed="true">5 mg</button>
+          <button class="pill preset" data-dose="1"  data-unit="mg">1 mg</button>
+          <button class="pill preset" data-dose="2"  data-unit="mg">2 mg</button>
+          <button class="pill preset" data-dose="5"  data-unit="mg">5 mg</button>
           <button class="pill preset" data-dose="10" data-unit="mg">10 mg</button>
         </div>
       </div>
 
-      <p class="note" style="margin-top:10px">
-        Assumes a U-100 insulin syringe where <strong>1 unit = 0.01 mL</strong>. Calculations update as you type.
-      </p>
+      <p class="note" style="margin-top:10px">Assumes a U-100 insulin syringe where
+        <strong>1 unit = 0.01 mL</strong>. Calculations update as you type.</p>
     </section>
 
-    <!-- RIGHT: Visuals -->
-    <section class="card" aria-labelledby="visTitle">
-      <h2 id="visTitle" class="big section-title">Visual Aid</h2>
-
-      <div class="tabs" role="tablist">
-        <button id="tab-subq" role="tab" aria-selected="true" aria-pressed="true">SUBQ Syringe</button>
-        <button id="tab-classic" role="tab" aria-selected="false" aria-pressed="false">Classic</button>
+    <!-- RIGHT: Visual Aid with tabs -->
+    <section class="subq-card" aria-labelledby="visTitle">
+      <div class="tabs" role="tablist" aria-label="Visual">
+        <button id="tabSubq" class="pill" role="tab" aria-selected="true" aria-controls="panelSubq">SUBQ Syringe</button>
+        <button id="tabClassic" class="pill" role="tab" aria-selected="false" aria-controls="panelClassic">Classic</button>
       </div>
 
-      <h3 id="headline" style="margin:8px 0 12px 2px;font-size:18px">
-        To have a dose of <span id="doseOut">0.5</span> <span id="doseUnitLabel">mg</span> pull the syringe to
-        <span id="unitsOut">10</span> <span id="unitWord">units</span>
-      </h3>
+      <h2 id="visTitle" class="big" style="margin:6px 0 12px">
+        To have a dose of <span id="doseOut">0.5</span> <span id="doseUnitLabel">mg</span>
+        pull the syringe to <span id="unitsOut">—</span> <span id="unitWord">units</span>
+      </h2>
 
-      <!-- SUBQ SYRINGE OVERLAY -->
-      <figure id="subqFigure" class="subq-figure" aria-label="SUBQ syringe visual" role="group">
-        <div class="subq-viewport" id="subqViewport">
-          <img id="subqImg" src="IMG_20250928_220440.png" alt="SUBQ syringe image">
-          <div class="overlay" id="overlay">
-            <div class="barrel" id="barrel">
-              <div class="barrel-track"></div>
-              <div class="scale" id="subqScale"></div>
-              <div class="fillbar" id="subqFill"></div>
-              <div class="cursor-subq" id="subqCursor"></div>
+      <!-- SUBQ Syringe panel -->
+      <div id="panelSubq" role="tabpanel" aria-labelledby="tabSubq">
+        <div class="subq-wrapper">
+          <img src="IMG_20250928_220440.png" alt="SUBQ snake syringe">
+          <div class="subq-overlay" id="subqOverlay">
+            <div class="subq-track">
+              <div class="subq-fill" id="subqFill"></div>
+              <div class="subq-cursor" id="subqCursor"></div>
+              <div class="subq-ticks" id="subqTicks"></div>
             </div>
           </div>
         </div>
-      </figure>
 
-      <!-- CLASSIC -->
-      <div id="classicBlock" style="display:none">
+        <div class="result" style="margin-top:18px">
+          <div class="chip">
+            <div class="k">Units to pull</div>
+            <div class="v" id="unitsOutChip">—</div>
+            <div class="k" style="margin-top:4px">≈ <span id="mlOut">—</span></div>
+          </div>
+          <div class="chip">
+            <div class="k">Potency</div>
+            <div class="v" id="potencyOut">—</div>
+            <div class="k"><span id="potencyUnitLabel">mg</span> per unit</div>
+          </div>
+        </div>
+        <p id="warn" class="note" style="margin-top:8px"></p>
+      </div>
+
+      <!-- Classic panel -->
+      <div id="panelClassic" style="display:none" role="tabpanel" aria-labelledby="tabClassic">
         <div class="syringe" aria-live="polite">
           <div class="tube" id="tube">
             <div class="fill" id="fill"></div>
-            <div class="cap" aria-hidden="true"></div>
-            <div class="cursor" id="cursor"></div>
+            <!-- Cursor only in Classic -->
+            <div class="cursor" id="cursor" aria-hidden="true"></div>
           </div>
           <div class="ticks" id="ticks" aria-hidden="true"></div>
 
           <div class="result">
             <div class="chip">
               <div class="k">Units to pull</div>
-              <div class="v" id="unitsOutChip">—</div>
-              <div class="k" style="margin-top:4px">≈ <span id="mlOut">—</span></div>
+              <div class="v" id="unitsOutChipC">—</div>
+              <div class="k" style="margin-top:4px">≈ <span id="mlOutC">—</span></div>
             </div>
             <div class="chip">
               <div class="k">Potency</div>
-              <div class="v" id="potencyOut">—</div>
-              <div class="k"><span id="potencyUnitLabel">mg</span> per unit</div>
+              <div class="v" id="potencyOutC">—</div>
+              <div class="k"><span id="potencyUnitLabelC">mg</span> per unit</div>
             </div>
           </div>
-          <p id="warn" class="note" style="margin-top:8px"></p>
-        </div>
-      </div>
-
-      <div class="result" style="margin-top:14px">
-        <div class="chip">
-          <div class="k">Units to pull</div>
-          <div class="v" id="unitsOutChip2">—</div>
-          <div class="k" style="margin-top:4px">≈ <span id="mlOut2">—</span></div>
-        </div>
-        <div class="chip">
-          <div class="k">Potency</div>
-          <div class="v" id="potencyOut2">—</div>
-          <div class="k"><span id="potencyUnitLabel2">mg</span> per unit</div>
         </div>
       </div>
 
@@ -302,17 +287,18 @@ h2.section-title{margin:6px 0 12px}
   </div>
 </div>
 
-<!-- DEBUG HUD -->
+<!-- Debug HUD -->
 <div id="hud" class="hud" aria-live="polite">
   <strong>Debug mode</strong> — Press <kbd>D</kbd> to toggle<br>
-  Move: <kbd>←</kbd> / <kbd>→</kbd> / <kbd>↑</kbd> / <kbd>↓</kbd> (hold <kbd>Shift</kbd> for ×4)<br>
-  Left%: <kbd>;</kbd> / <kbd>'</kbd> Right%: <kbd>[</kbd> / <kbd>]</kbd> Top%: <kbd>,</kbd> / <kbd>.</kbd> Height%: <kbd>-</kbd> / <kbd>=</kbd><br>
+  Overlay (%): <kbd>←</kbd>/<kbd>→</kbd> = Left, <kbd>↑</kbd>/<kbd>↓</kbd> = Top (hold <kbd>Shift</kbd> for ×4)<br>
+  Overlay fine (%): Left <kbd>;</kbd>/<kbd>'</kbd>, Right <kbd>[</kbd>/<kbd>]</kbd>, Top <kbd>,</kbd>/<kbd>.</kbd>, Height <kbd>-</kbd>/<kbd>=</kbd><br>
+  Fill (px): <kbd>Q</kbd>/<kbd>E</kbd> (optional tiny nudge)<br>
   <span id="hudVals"></span>
 </div>
 
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-  const $ = id => document.getElementById(id);
+  const $ = (id) => document.getElementById(id);
 
   // Inputs
   const vialMg = $('vialMg');
@@ -326,38 +312,63 @@ document.addEventListener('DOMContentLoaded', () => {
   const doseUnitLabel = $('doseUnitLabel');
   const unitsOut = $('unitsOut');
   const unitWord = $('unitWord');
-  const unitsOutChip2 = $('unitsOutChip2');
-  const mlOut2 = $('mlOut2');
-  const potencyOut2 = $('potencyOut2');
-  const potencyUnitLabel2 = $('potencyUnitLabel2');
+  const mlOut = $('mlOut');
+  const potencyOut = $('potencyOut');
+  const potencyUnitLabel = $('potencyUnitLabel');
+  const unitsOutChip = $('unitsOutChip');
+  const warnEl = $('warn');
 
-  // Classic elements
-  const ticks = $('ticks');
+  // Classic outputs
   const fill = $('fill');
   const cursor = $('cursor');
+  const ticks = $('ticks');
+  const unitsOutChipC = $('unitsOutChipC');
+  const mlOutC = $('mlOutC');
+  const potencyOutC = $('potencyOutC');
+  const potencyUnitLabelC = $('potencyUnitLabelC');
 
   // SUBQ overlay elements
-  const subqScale = $('subqScale');
-  const subqFill  = $('subqFill');
-  const subqCursor= $('subqCursor');
-  const overlay   = $('overlay');
+  const subqOverlay = $('subqOverlay');
+  const subqFill    = $('subqFill');
+  const subqCursor  = $('subqCursor'); // thin green bar
+  const subqTicks   = $('subqTicks');
 
   // Tabs
-  const tabSubq = $('tab-subq');
-  const tabClassic = $('tab-classic');
-  const subqFigure = $('subqFigure');
-  const classicBlock = $('classicBlock');
+  const tabSubq = $('tabSubq');
+  const tabClassic = $('tabClassic');
+  const panelSubq = $('panelSubq');
+  const panelClassic = $('panelClassic');
+
+  // Presets
+  const presetsMcg = $('presets-mcg');
+  const presetsMg  = $('presets-mg');
 
   // Debug HUD
   const hud = $('hud');
   const hudVals = $('hudVals');
-  let debugOn = false;
+  let debug = false;
 
   const clamp=(n,min,max)=>Math.min(max,Math.max(min,n));
   const fmt=(n,d=2)=>Number.isFinite(n)?n.toFixed(d).replace(/\.0+$/,'').replace(/(\.[1-9]*)0+$/,'$1'):'—';
 
-  // Build ticks for Classic bar
-  function buildClassicTicks(){
+  // TABS
+  const setTab = (which) => {
+    if (which==='subq'){
+      tabSubq.setAttribute('aria-pressed','true'); tabSubq.setAttribute('aria-selected','true');
+      tabClassic.setAttribute('aria-pressed','false'); tabClassic.setAttribute('aria-selected','false');
+      panelSubq.style.display='block'; panelClassic.style.display='none';
+    } else {
+      tabSubq.setAttribute('aria-pressed','false'); tabSubq.setAttribute('aria-selected','false');
+      tabClassic.setAttribute('aria-pressed','true'); tabClassic.setAttribute('aria-selected','true');
+      panelSubq.style.display='none'; panelClassic.style.display='block';
+    }
+  };
+  tabSubq.addEventListener('click',()=>setTab('subq'));
+  tabClassic.addEventListener('click',()=>setTab('classic'));
+  setTab('subq');
+
+  // Build tick marks
+  function buildTicksClassic(){
     ticks.innerHTML='';
     const max=parseInt(syrSize.value,10)||30;
     const minorStep=(max<=30?1:5);
@@ -366,37 +377,38 @@ document.addEventListener('DOMContentLoaded', () => {
       const t=document.createElement('div');
       t.className='tick '+(i%majorStep===0?'major':'minor');
       if(i%majorStep===0){
-        const n=document.createElement('div');n.className='n';n.textContent=String(i);t.appendChild(n);
+        const n=document.createElement('div'); n.className='n'; n.textContent=String(i); t.appendChild(n);
       }
       ticks.appendChild(t);
     }
   }
-
-  // Build ticks/labels for SUBQ overlay
-  function buildSubqScale(){
-    subqScale.innerHTML='';
-    const max=parseInt(syrSize.value,10)||100;
-    const minorStep=(max<=30?1:max===50?2:2);
-    const majorStep=(max<=30?5:10);
-    const count = Math.floor(max/minorStep);
-    for(let i=0;i<=max;i+=minorStep){
-      const d=document.createElement('div');
-      d.className='t '+(i%majorStep===0?'m':'');
-      if(i%majorStep===0){
+  function buildTicksSubq(){
+    subqTicks.innerHTML='';
+    const max=parseInt(syrSize.value,10)||30;
+    const major = (max<=30?5:10);
+    for(let i=0;i<=max;i++){
+      const t=document.createElement('div');
+      t.className='subq-tick'+(i%major===0?' major':'');
+      // place evenly
+      t.style.position='absolute';
+      t.style.left=(i/max*100)+'%';
+      t.style.transform='translateX(-0.5px)';
+      subqTicks.appendChild(t);
+      if(i%major===0){
         const n=document.createElement('div');
-        n.className='n';
+        n.className='subq-num';
+        n.style.left=(i/max*100)+'%';
         n.textContent=String(i);
-        d.appendChild(n);
+        subqTicks.appendChild(n);
       }
-      subqScale.appendChild(d);
     }
   }
 
-  // math helpers
-  function desiredDoseMcg(){
-    const val = parseFloat(doseVal.value);
+  // Dose helpers
+  function getDesiredDoseMcg(){
+    const val=parseFloat(doseVal.value);
     if(!Number.isFinite(val)||val<=0) return NaN;
-    return doseUnit.value==='mg'? val*1000 : val;
+    return (doseUnit.value==='mg')? val*1000 : val;
   }
 
   function recalc(){
@@ -404,155 +416,163 @@ document.addEventListener('DOMContentLoaded', () => {
     const ml=parseFloat(diluentMl.value);
     const maxUnits=parseInt(syrSize.value,10)||30;
 
-    const conc=(mg>0 && ml>0)?(mg/ml):NaN;       // mg/mL
-    const mcgPerU=Number.isFinite(conc)?conc*10:NaN; // mcg per U (U-100)
-    const mgPerU =Number.isFinite(mcgPerU)?(mcgPerU/1000):NaN;
+    const conc = (mg>0 && ml>0) ? (mg/ml) : NaN; // mg/mL
+    const mcgPerUnit = Number.isFinite(conc)? conc*10 : NaN; // (mg/mL)*(mL/Unit)*1000
+    const mgPerUnit  = Number.isFinite(mcgPerUnit)? (mcgPerUnit/1000) : NaN;
 
-    const dMcg=desiredDoseMcg();
-    const units=(Number.isFinite(mcgPerU)&&Number.isFinite(dMcg))?(dMcg/mcgPerU):NaN;
-    const mlToPull=Number.isFinite(units)?units*0.01:NaN;
+    const desiredMcg = getDesiredDoseMcg();
+    const units = (Number.isFinite(mcgPerUnit) && Number.isFinite(desiredMcg)) ? (desiredMcg/mcgPerUnit) : NaN;
+    const mlToPull = Number.isFinite(units)? units*0.01 : NaN;
 
-    // headline + chips
+    // Top header + SUBQ stats
     if(doseUnit.value==='mg'){
-      doseOut.textContent=fmt(dMcg/1000,3);
+      doseOut.textContent=fmt(desiredMcg/1000,3);
       doseUnitLabel.textContent='mg';
-      potencyOut2.textContent=Number.isFinite(mgPerU)?fmt(mgPerU,4):'—';
-      potencyUnitLabel2.textContent='mg';
+      potencyOut.textContent=Number.isFinite(mgPerUnit)?fmt(mgPerUnit,4):'—';
+      potencyUnitLabel.textContent='mg';
     }else{
-      doseOut.textContent=fmt(dMcg,0);
+      doseOut.textContent=fmt(desiredMcg,0);
       doseUnitLabel.textContent='mcg';
-      potencyOut2.textContent=Number.isFinite(mcgPerU)?fmt(mcgPerU,2):'—';
-      potencyUnitLabel2.textContent='mcg';
+      potencyOut.textContent=Number.isFinite(mcgPerUnit)?fmt(mcgPerUnit,2):'—';
+      potencyUnitLabel.textContent='mcg';
     }
-
     unitsOut.textContent=fmt(units,2);
-    unitsOutChip2.textContent=Number.isFinite(units)?fmt(units,2):'—';
-    mlOut2.textContent=Number.isFinite(mlToPull)?`${fmt(mlToPull,3)} mL`:'—';
+    unitsOutChip.textContent=Number.isFinite(units)?fmt(units,2):'—';
+    mlOut.textContent=Number.isFinite(mlToPull)?`${fmt(mlToPull,3)} mL`:'—';
     if(Number.isFinite(units)) unitWord.textContent=Math.abs(units-1)<0.005?'unit':'units';
 
-    // Classic visuals
+    // SUBQ overlay fill + cursor
     const pct=Number.isFinite(units)?clamp(units/maxUnits*100,0,100):0;
+    subqFill.style.width=pct+'%';
+    subqCursor.style.left=`calc(${pct}% - 1.5px)`; // thin green line
+
+    // Classic view mirrors
+    if(doseUnit.value==='mg'){
+      potencyOutC.textContent=Number.isFinite(mgPerUnit)?fmt(mgPerUnit,4):'—';
+      potencyUnitLabelC.textContent='mg';
+    }else{
+      potencyOutC.textContent=Number.isFinite(mcgPerUnit)?fmt(mcgPerUnit,2):'—';
+      potencyUnitLabelC.textContent='mcg';
+    }
+    unitsOutChipC.textContent=Number.isFinite(units)?fmt(units,2):'—';
+    mlOutC.textContent=Number.isFinite(mlToPull)?`${fmt(mlToPull,3)} mL`:'—';
     fill.style.width=pct+'%';
     cursor.style.left=`calc(${pct}% - 1px)`;
 
-    // SUBQ visuals (same pct, track width is the barrel width)
-    subqFill.style.width=pct+'%';
-    subqCursor.style.left=`calc(${pct}% - 1px)`;
+    // Warnings
+    warnEl.textContent=''; warnEl.classList.remove('warn');
+    if(!Number.isFinite(units)){
+      warnEl.textContent='Enter positive values for vial mg, diluent mL, and dose.';
+    }else if(units>maxUnits){
+      warnEl.textContent=`⚠️ Dose exceeds the selected syringe scale of ${maxUnits} units.`; warnEl.classList.add('warn');
+    }
   }
 
-  // Presets
+  // Wire presets
   function wirePresets(row){
     row.querySelectorAll('.preset').forEach(btn=>{
       btn.addEventListener('click',()=>{
         document.querySelectorAll('.preset').forEach(b=>b.setAttribute('aria-pressed','false'));
         btn.setAttribute('aria-pressed','true');
-        doseUnit.value=btn.dataset.unit;
-        doseVal.value=btn.dataset.dose;
+        doseUnit.value = btn.dataset.unit;
+        doseVal.value  = btn.dataset.dose;
         togglePresetRows();
-        buildSubqScale();
         recalc();
       });
     });
   }
-  const presetsMcg=$('presets-mcg'); const presetsMg=$('presets-mg');
-  wirePresets(presetsMcg); wirePresets(presetsMg);
-
   function togglePresetRows(){
-    const useMg=(doseUnit.value==='mg');
-    presetsMg.style.display=useMg?'flex':'none';
-    presetsMcg.style.display=useMg?'none':'flex';
+    const useMg = (doseUnit.value === 'mg');
+    presetsMg.style.display  = useMg ? 'flex' : 'none';
+    presetsMcg.style.display = useMg ? 'none' : 'flex';
+    doseUnitLabel.textContent   = useMg ? 'mg'  : 'mcg';
+    potencyUnitLabel.textContent= useMg ? 'mg'  : 'mcg';
+    potencyUnitLabelC.textContent= useMg ? 'mg' : 'mcg';
   }
-
-  // unit change keeps absolute dose
   function convertOnUnitChange(prev,next){
-    const v=parseFloat(doseVal.value); if(!Number.isFinite(v))return;
-    if(prev===next) return;
-    doseVal.value = (prev==='mcg' && next==='mg') ? (v/1000) : (prev==='mg' && next==='mcg') ? (v*1000) : v;
+    const val=parseFloat(doseVal.value);
+    if(!Number.isFinite(val)||prev===next) return;
+    doseVal.value = (prev==='mcg'&&next==='mg') ? (val/1000) : (prev==='mg'&&next==='mcg') ? (val*1000) : val;
   }
 
-  // Events
   ['input','change'].forEach(evt=>{
     [vialMg,diluentMl,syrSize,doseVal].forEach(el=>{
       el.addEventListener(evt,()=>{
-        if(el===syrSize){buildClassicTicks();buildSubqScale();}
+        if(el===syrSize){ buildTicksClassic(); buildTicksSubq(); }
         recalc();
       });
     });
   });
-
   doseUnit.addEventListener('change',()=>{
-    const prev=(doseUnit.dataset.prev||'mcg'), next=doseUnit.value;
+    const prev=(doseUnit.dataset.prev||'mg'), next=doseUnit.value;
     convertOnUnitChange(prev,next);
     doseUnit.dataset.prev=next;
     togglePresetRows();
-    buildSubqScale();
+    document.querySelectorAll('.preset').forEach(b=>b.setAttribute('aria-pressed','false'));
     recalc();
   });
 
-  // Tabs
-  function setTab(which){
-    const subqActive = which==='subq';
-    tabSubq.setAttribute('aria-pressed', subqActive);
-    tabClassic.setAttribute('aria-pressed', !subqActive);
-    subqFigure.style.display = subqActive ? 'block' : 'none';
-    classicBlock.style.display= subqActive ? 'none' : 'block';
-  }
-  tabSubq.addEventListener('click',()=>setTab('subq'));
-  tabClassic.addEventListener('click',()=>setTab('classic'));
+  wirePresets(presetsMg); wirePresets(presetsMcg);
+  doseUnit.dataset.prev=doseUnit.value;
+  buildTicksClassic(); buildTicksSubq();
+  togglePresetRows(); recalc();
 
-  // ====== DEBUG KEYS (percent-based, zoom-invariant) ======
-  function pct(val){ return Math.max(0, Math.min(100, val)); }
-  function getVar(name){ return parseFloat(getComputedStyle(document.documentElement).getPropertyValue(name))||0; }
-  function setVar(name,val){ document.documentElement.style.setProperty(name, val+(name==='--barrel-shift'?'':'%')); }
-  function setVarPx(name,val){ document.documentElement.style.setProperty(name, val+'px'); }
+  /* ----------------- Developer Mode (overlay inside image) ----------------- */
+  // Read/write CSS vars as % or px
+  const getVar = (name, fallback) => {
+    const v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+    if(!v) return fallback;
+    if(v.endsWith('%')) return parseFloat(v);
+    if(v.endsWith('px')) return parseFloat(v);
+    return parseFloat(v);
+  };
+  const setVar = (name, val) => document.documentElement.style.setProperty(name, val.toFixed(2)+'%');
+  const setVarPx = (name, val) => document.documentElement.style.setProperty(name, Math.round(val)+'px');
+  const pct = (n)=>Math.max(0,Math.min(100,n));
 
-  function showHUD(){
-    hud.classList.add('show');
-    const L=getVar('--b-left'), R=getVar('--b-right'), T=getVar('--b-top'), H=getVar('--b-height');
-    const S=parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--barrel-shift'))||0;
-    hudVals.textContent=`--b-left: ${L.toFixed(2)}%  |  --b-right: ${R.toFixed(2)}%  |  --b-top: ${T.toFixed(2)}%  |  --b-height: ${H.toFixed(2)}%  |  --barrel-shift: ${S.toFixed(1)}px`;
-  }
-  function hideHUD(){ hud.classList.remove('show'); }
+  // Current values
+  let L=getVar('--b-left',15), R=getVar('--b-right',19), T=getVar('--b-top',46.5), H=getVar('--b-height',13);
+  let S=getVar('--barrel-shift',0); // px
+  const stepPct=0.25, stepPx=1;
+
+  const refreshHUD=()=>{
+    hudVals.textContent = `--b-left: ${L.toFixed(2)}% | --b-right: ${R.toFixed(2)}% | --b-top: ${T.toFixed(2)}% | --b-height: ${H.toFixed(2)}% | --barrel-shift: ${S.toFixed(1)}px`;
+  };
 
   document.addEventListener('keydown',(e)=>{
-    if(e.key==='d' || e.key==='D'){ debugOn=!debugOn; debugOn?showHUD():hideHUD(); return; }
-    if(!debugOn) return;
+    if(e.key==='d' || e.key==='D'){
+      debug=!debug; hud.classList.toggle('show',debug); refreshHUD(); return;
+    }
+    if(!debug) return;
 
-    const stepPct = e.shiftKey ? 0.4 : 0.1;
-    const stepPx  = e.shiftKey ? 4   : 1;
-
-    let L=getVar('--b-left'), R=getVar('--b-right'), T=getVar('--b-top'), H=getVar('--b-height');
-    let S=parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--barrel-shift'))||0;
-
+    const big = e.shiftKey? 4:1;
     switch(e.key){
-      // percent keys
-      case ';': L=pct(L- stepPct); setVar('--b-left',L); break;
-      case "'": L=pct(L+ stepPct); setVar('--b-left',L); break;
-      case '[': R=pct(R- stepPct); setVar('--b-right',R); break;
-      case ']': R=pct(R+ stepPct); setVar('--b-right',R); break;
-      case ',': T=pct(T- stepPct); setVar('--b-top',T); break;
-      case '.': T=pct(T+ stepPct); setVar('--b-top',T); break;
-      case '-': H=pct(H- stepPct); setVar('--b-height',H); break;
-      case '=': H=pct(H+ stepPct); setVar('--b-height',H); break;
+      // Fine overlay (%)
+      case ';': L=pct(L-stepPct); setVar('--b-left',L); break;
+      case "'": L=pct(L+stepPct); setVar('--b-left',L); break;
+      case '[': R=pct(R-stepPct); setVar('--b-right',R); break;
+      case ']': R=pct(R+stepPct); setVar('--b-right',R); break;
+      case ',': T=pct(T-stepPct); setVar('--b-top',T); break;
+      case '.': T=pct(T+stepPct); setVar('--b-top',T); break;
+      case '-': H=pct(H-stepPct); setVar('--b-height',H); break;
+      case '=': H=pct(H+stepPct); setVar('--b-height',H); break;
 
-      // pixel nudges for the moving fill (if ever needed)
-      case 'ArrowLeft': S-=stepPx; setVarPx('--barrel-shift',S); break;
-      case 'ArrowRight': S+=stepPx; setVarPx('--barrel-shift',S); break;
-      case 'ArrowUp':   /* reserved for future vertical nudge */ break;
-      case 'ArrowDown': /* reserved for future vertical nudge */ break;
+      // Coarse overlay with arrows
+      case 'ArrowLeft':  L=pct(L-(stepPct*big)); setVar('--b-left',L); break;
+      case 'ArrowRight': L=pct(L+(stepPct*big)); setVar('--b-left',L); break;
+      case 'ArrowUp':    T=pct(T-(stepPct*big)); setVar('--b-top',T); break;
+      case 'ArrowDown':  T=pct(T+(stepPct*big)); setVar('--b-top',T); break;
+
+      // Optional blue fill pixel nudge
+      case 'q': case 'Q': S-=stepPx*big; setVarPx('--barrel-shift',S); break;
+      case 'e': case 'E': S+=stepPx*big; setVarPx('--barrel-shift',S); break;
+
       default: return;
     }
     e.preventDefault();
-    showHUD();
+    refreshHUD();
   });
 
-  // Init
-  doseUnit.dataset.prev=doseUnit.value;
-  buildClassicTicks();
-  buildSubqScale();
-  togglePresetRows();
-  setTab('subq');
-  recalc();
 });
 </script>
 </body>
