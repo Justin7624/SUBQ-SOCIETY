@@ -100,6 +100,7 @@
   .subq-card{background:linear-gradient(180deg, #1a1b21, #131419);border:1px solid #23242b;border-radius:16px;padding:18px}
   .subq-wrapper{position:relative;display:block;width:100%;max-width:980px;margin:8px auto 0}
   .subq-wrapper img{display:block;width:100%;height:auto;border-radius:10px}
+
   .subq-overlay{
     position:absolute;
     pointer-events:none; /* do not block UI */
@@ -124,12 +125,27 @@
     position:absolute;top:-8px;width:3px;height:calc(100% + 16px);
     background:var(--accent-2);border-radius:2px;box-shadow:0 0 0 2px rgba(37,208,166,.15)
   }
-  .subq-ticks{position:absolute;left:8px;right:8px;bottom:6px;height:16px;display:flex;justify-content:space-between;align-items:flex-end}
-  .subq-tick{width:1px;background:#3a3d47;height:8px;opacity:.8}
-  .subq-tick.major{height:12px}
-  .subq-num{position:absolute;bottom:-14px;font-size:11px;color:#9aa0ab;transform:translateX(-50%)}
-  /* Hide “knob” only in SUBQ mode – we don’t render a cap/cursor knob there */
-  .subq-knob{display:none}
+
+  /* --- Updated tick/number rendering for SUBQ overlay --- */
+  .subq-ticks{position:absolute;left:8px;right:8px;bottom:6px;height:16px;}
+  .subq-tick{position:absolute;bottom:0;width:1px;background:#3a3d47;height:8px;opacity:.85}
+  .subq-tick.mid{height:10px;opacity:.9}
+  .subq-tick.major{height:14px;opacity:1}
+
+  .subq-num{
+    position:absolute;left:0;bottom:-18px;
+    transform:translateX(-50%);
+    color:#9aa0ab;font-weight:700;opacity:.95;
+    font-size:11px;letter-spacing:0.2px;
+    user-select:none;pointer-events:none;
+  }
+  /* U-100: rotate tens labels like a real syringe print */
+  .subq-num.u100{
+    bottom:50%;
+    transform:translate(-50%, 50%) rotate(-90deg);
+    font-size:13px;
+    letter-spacing:0.4px;
+  }
 
   /* Debug HUD */
   .hud{
@@ -367,7 +383,7 @@ document.addEventListener('DOMContentLoaded', () => {
   tabClassic.addEventListener('click',()=>setTab('classic'));
   setTab('subq');
 
-  // Build tick marks
+  // Build tick marks (Classic)
   function buildTicksClassic(){
     ticks.innerHTML='';
     const max=parseInt(syrSize.value,10)||30;
@@ -382,23 +398,38 @@ document.addEventListener('DOMContentLoaded', () => {
       ticks.appendChild(t);
     }
   }
+
+  // Build tick marks (SUBQ overlay) — U-100 looks like a real syringe
   function buildTicksSubq(){
-    subqTicks.innerHTML='';
-    const max=parseInt(syrSize.value,10)||30;
-    const major = (max<=30?5:10);
-    for(let i=0;i<=max;i++){
-      const t=document.createElement('div');
-      t.className='subq-tick'+(i%major===0?' major':'');
-      // place evenly
-      t.style.position='absolute';
-      t.style.left=(i/max*100)+'%';
-      t.style.transform='translateX(-0.5px)';
+    subqTicks.innerHTML = '';
+    const max = parseInt(syrSize.value, 10) || 30;
+
+    const isU100   = (max === 100);
+    const majorMod = isU100 ? 10 : (max <= 30 ? 5 : 10); // 10s for 100; 5s for 30; 10s for 50
+    const midMod   = 5; // mid tick every 5 units
+
+    for (let i = 0; i <= max; i++) {
+      const x = (i / max) * 100;
+
+      // tick
+      const t = document.createElement('div');
+      t.className = 'subq-tick';
+      if (i % majorMod === 0)      t.classList.add('major');
+      else if (i % midMod === 0)   t.classList.add('mid');
+      t.style.left = x + '%';
+      t.style.transform = 'translateX(-0.5px)';
       subqTicks.appendChild(t);
-      if(i%major===0){
-        const n=document.createElement('div');
-        n.className='subq-num';
-        n.style.left=(i/max*100)+'%';
-        n.textContent=String(i);
+
+      // numeric label
+      const shouldLabel =
+        (isU100 && i % 10 === 0 && i !== 0) ||       // tens only for 100-unit
+        (!isU100 && i % majorMod === 0 && i !== 0);  // majors for 30/50
+
+      if (shouldLabel) {
+        const n = document.createElement('div');
+        n.className = 'subq-num' + (isU100 ? ' u100' : '');
+        n.style.left = x + '%';
+        n.textContent = String(i);
         subqTicks.appendChild(n);
       }
     }
@@ -528,7 +559,7 @@ document.addEventListener('DOMContentLoaded', () => {
   };
   const setVar = (name, val) => document.documentElement.style.setProperty(name, val.toFixed(2)+'%');
   const setVarPx = (name, val) => document.documentElement.style.setProperty(name, Math.round(val)+'px');
-  const pct = (n)=>Math.max(0,Math.min(100,n));
+  const pctLimit = (n)=>Math.max(0,Math.min(100,n));
 
   // Current values
   let L=getVar('--b-left',15), R=getVar('--b-right',19), T=getVar('--b-top',46.5), H=getVar('--b-height',13);
@@ -548,20 +579,20 @@ document.addEventListener('DOMContentLoaded', () => {
     const big = e.shiftKey? 4:1;
     switch(e.key){
       // Fine overlay (%)
-      case ';': L=pct(L-stepPct); setVar('--b-left',L); break;
-      case "'": L=pct(L+stepPct); setVar('--b-left',L); break;
-      case '[': R=pct(R-stepPct); setVar('--b-right',R); break;
-      case ']': R=pct(R+stepPct); setVar('--b-right',R); break;
-      case ',': T=pct(T-stepPct); setVar('--b-top',T); break;
-      case '.': T=pct(T+stepPct); setVar('--b-top',T); break;
-      case '-': H=pct(H-stepPct); setVar('--b-height',H); break;
-      case '=': H=pct(H+stepPct); setVar('--b-height',H); break;
+      case ';': L=pctLimit(L-stepPct); setVar('--b-left',L); break;
+      case "'": L=pctLimit(L+stepPct); setVar('--b-left',L); break;
+      case '[': R=pctLimit(R-stepPct); setVar('--b-right',R); break;
+      case ']': R=pctLimit(R+stepPct); setVar('--b-right',R); break;
+      case ',': T=pctLimit(T-stepPct); setVar('--b-top',T); break;
+      case '.': T=pctLimit(T+stepPct); setVar('--b-top',T); break;
+      case '-': H=pctLimit(H-stepPct); setVar('--b-height',H); break;
+      case '=': H=pctLimit(H+stepPct); setVar('--b-height',H); break;
 
       // Coarse overlay with arrows
-      case 'ArrowLeft':  L=pct(L-(stepPct*big)); setVar('--b-left',L); break;
-      case 'ArrowRight': L=pct(L+(stepPct*big)); setVar('--b-left',L); break;
-      case 'ArrowUp':    T=pct(T-(stepPct*big)); setVar('--b-top',T); break;
-      case 'ArrowDown':  T=pct(T+(stepPct*big)); setVar('--b-top',T); break;
+      case 'ArrowLeft':  L=pctLimit(L-(stepPct*big)); setVar('--b-left',L); break;
+      case 'ArrowRight': L=pctLimit(L+(stepPct*big)); setVar('--b-left',L); break;
+      case 'ArrowUp':    T=pctLimit(T-(stepPct*big)); setVar('--b-top',T); break;
+      case 'ArrowDown':  T=pctLimit(T+(stepPct*big)); setVar('--b-top',T); break;
 
       // Optional blue fill pixel nudge
       case 'q': case 'Q': S-=stepPx*big; setVarPx('--barrel-shift',S); break;
