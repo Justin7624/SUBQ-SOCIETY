@@ -124,12 +124,18 @@
     position:absolute;top:-8px;width:3px;height:calc(100% + 16px);
     background:var(--accent-2);border-radius:2px;box-shadow:0 0 0 2px rgba(37,208,166,.15)
   }
-  .subq-ticks{position:absolute;left:8px;right:8px;bottom:6px;height:16px;display:flex;justify-content:space-between;align-items:flex-end}
-  .subq-tick{width:1px;background:#3a3d47;height:8px;opacity:.8}
+
+  /* tick rail inside SUBQ track */
+  .subq-ticks{position:absolute;left:8px;right:8px;bottom:6px;height:16px}
+  .subq-tick{position:absolute;width:1px;background:#3a3d47;opacity:.9}
+  .subq-tick.minor{height:6px}
+  .subq-tick.mid{height:9px}
   .subq-tick.major{height:12px}
-  .subq-num{position:absolute;bottom:-14px;font-size:11px;color:#9aa0ab;transform:translateX(-50%)}
-  /* Hide “knob” only in SUBQ mode – we don’t render a cap/cursor knob there */
-  .subq-knob{display:none}
+  .subq-num{
+    position:absolute;bottom:-14px;
+    font-size:clamp(10px,1.2vw,14px);
+    color:#9aa0ab;transform:translateX(-50%)
+  }
 
   /* Debug HUD */
   .hud{
@@ -328,7 +334,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const potencyUnitLabelC = $('potencyUnitLabelC');
 
   // SUBQ overlay elements
-  const subqOverlay = $('subqOverlay');
   const subqFill    = $('subqFill');
   const subqCursor  = $('subqCursor'); // thin green bar
   const subqTicks   = $('subqTicks');
@@ -367,7 +372,7 @@ document.addEventListener('DOMContentLoaded', () => {
   tabClassic.addEventListener('click',()=>setTab('classic'));
   setTab('subq');
 
-  // Build tick marks
+  // Build tick marks: Classic
   function buildTicksClassic(){
     ticks.innerHTML='';
     const max=parseInt(syrSize.value,10)||30;
@@ -382,18 +387,45 @@ document.addEventListener('DOMContentLoaded', () => {
       ticks.appendChild(t);
     }
   }
+
+  // Build tick marks: SUBQ overlay
   function buildTicksSubq(){
     subqTicks.innerHTML='';
     const max=parseInt(syrSize.value,10)||30;
+
+    // For U-100: 4 ticks between labels -> ticks every 2 units,
+    // medium tick at 5s, labels at 10s.
+    if (max === 100){
+      for(let i=0;i<=100;i+=2){
+        const t=document.createElement('div');
+        let cls='minor';
+        if(i%10===0) cls='major';
+        else if(i%5===0) cls='mid';
+        t.className='subq-tick '+cls;
+        t.style.left=(i/100*100)+'%';
+        t.style.transform='translateX(-0.5px)';
+        subqTicks.appendChild(t);
+
+        if(i%10===0){
+          const n=document.createElement('div');
+          n.className='subq-num';
+          n.style.left=(i/100*100)+'%';
+          n.textContent=String(i);
+          subqTicks.appendChild(n);
+        }
+      }
+      return;
+    }
+
+    // For 30/50 we keep unit ticks (precise), label majors.
     const major = (max<=30?5:10);
     for(let i=0;i<=max;i++){
       const t=document.createElement('div');
-      t.className='subq-tick'+(i%major===0?' major':'');
-      // place evenly
-      t.style.position='absolute';
+      t.className='subq-tick'+(i%major===0?' major':' minor');
       t.style.left=(i/max*100)+'%';
       t.style.transform='translateX(-0.5px)';
       subqTicks.appendChild(t);
+
       if(i%major===0){
         const n=document.createElement('div');
         n.className='subq-num';
