@@ -103,7 +103,6 @@
   .subq-overlay{
     position:absolute;
     pointer-events:none; /* do not block UI */
-    /* Positioned WITHIN the image, scales with it */
     left:var(--b-left); right:var(--b-right); top:var(--b-top);
     height:var(--b-height);
     display:flex; align-items:center; justify-content:center;
@@ -124,16 +123,21 @@
     position:absolute;top:-8px;width:3px;height:calc(100% + 16px);
     background:var(--accent-2);border-radius:2px;box-shadow:0 0 0 2px rgba(37,208,166,.15)
   }
+
+  /* Ticks/labels layer: fully absolute for zoom-stable layout */
   .subq-ticks{
     position:absolute;left:8px;right:8px;bottom:6px;height:16px;
+    pointer-events:none;
   }
   .subq-tick{position:absolute;width:1px;background:#3a3d47;height:8px;opacity:.85}
-  .subq-tick.mid{height:10px}
   .subq-tick.major{height:12px}
   .subq-num{
-    position:absolute;bottom:-16px;font-size:12px;color:#cfd5e3;
-    white-space:nowrap;letter-spacing:.02em;
+    position:absolute;bottom:-16px;font-size:12px;line-height:12px;
+    color:#9aa0ab;transform:translateX(-50%);
+    letter-spacing:0.02em; /* tiny tracking helps readability */
+    white-space:nowrap;
   }
+  .subq-num.hidden{display:none}
 
   /* Debug HUD */
   .hud{
@@ -264,6 +268,7 @@
         <div class="syringe" aria-live="polite">
           <div class="tube" id="tube">
             <div class="fill" id="fill"></div>
+            <!-- Cursor only in Classic -->
             <div class="cursor" id="cursor" aria-hidden="true"></div>
           </div>
           <div class="ticks" id="ticks" aria-hidden="true"></div>
@@ -370,7 +375,7 @@ document.addEventListener('DOMContentLoaded', () => {
   tabClassic.addEventListener('click',()=>setTab('classic'));
   setTab('subq');
 
-  // Build tick marks (Classic)
+  /* ---------- Classic ticks ---------- */
   function buildTicksClassic(){
     ticks.innerHTML='';
     const max=parseInt(syrSize.value,10)||30;
@@ -386,91 +391,71 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // Build ticks + labels (SUBQ overlay)
+  /* ---------- SUBQ ticks/labels ---------- */
+  function px(el){ return el.getBoundingClientRect().width; }
+
   function buildTicksSubq(){
     subqTicks.innerHTML='';
     const max=parseInt(syrSize.value,10)||30;
+    const overlayW = subqTicks.clientWidth || subqTicks.getBoundingClientRect().width;
 
-    // tick heights: small every 2, mid at 5s, major at 10s
-    const addTickAt = (val, cls='') => {
-      const x = (val/max)*100;
-      const t = document.createElement('div');
-      t.className = 'subq-tick ' + cls;
-      t.style.left = x + '%';
-      t.style.transform = 'translateX(-0.5px)';
-      subqTicks.appendChild(t);
-      return x;
-    };
+    // Choose label set
+    let labelValues = [];
+    let minorStep = 1;
+    let majorStep = 5;
+    let antiOverlap = false;
+    let minLabelGap = 13; // px (requested)
 
-    // full set of ticks (1-unit gives nice density; we style by class)
-    for(let i=0;i<=max;i++){
-      let cls=''; 
-      if(i%10===0){ cls='major'; }
-      else if(i%5===0){ cls='mid'; }
-      else if(i%2===0){ cls=''; } // minor default
-      else { continue; } // keep it cleaner: skip odd 1-unit ticks
-      addTickAt(i, cls);
+    if (max === 100){
+      labelValues = Array.from({length:11},(_,i)=>i*10); // 0..100
+      minorStep = 2;  // 4 minors between tens
+      majorStep = 10;
+      antiOverlap = true; // ONLY for U-100
+    } else if (max === 50){
+      labelValues = [0,10,15,20,25,30,35,40,45,50];
+      minorStep = 1;
+      majorStep = 5;
+      antiOverlap = false;
+    } else { // 30
+      labelValues = [0,10,15,20,25,30];
+      minorStep = 1;
+      majorStep = 5;
+      antiOverlap = false;
     }
 
-    // ----- Label builder -----
-    const labelEl = (val, xPct, align='center')=>{
+    // Draw ticks (minors & majors)
+    for(let u=0; u<=max; u+=minorStep){
+      const t=document.createElement('div');
+      t.className='subq-tick'+(u%majorStep===0?' major':'');
+      const pct = (u/max)*100;
+      t.style.left = pct+'%';
+      t.style.transform='translateX(-0.5px)';
+      subqTicks.appendChild(t);
+    }
+
+    // Draw labels with even spacing (value-based)
+    let lastRight = -Infinity;
+    labelValues.forEach(v=>{
+      const pct = (v/max)*100;
       const n = document.createElement('div');
       n.className='subq-num';
-      n.textContent=String(val);
-      n.style.left = xPct + '%';
-      if(align==='left'){ n.style.transform='translateX(0)'; n.style.textAlign='left'; }
-      else if(align==='right'){ n.style.transform='translateX(-100%)'; n.style.textAlign='right'; }
-      else { n.style.transform='translateX(-50%)'; }
+      n.style.left = pct+'%';
+      n.textContent = String(v);
+
+      if (antiOverlap){
+        // approximate left/right in px to decide visibility
+        const estWidth = 12 * String(v).length; // heuristic; font ~12px per digit at this size
+        const center = overlayW * (pct/100);
+        const left = center - estWidth/2;
+        const right = center + estWidth/2;
+        if (left - lastRight < minLabelGap){
+          n.classList.add('hidden');
+        } else {
+          lastRight = right;
+        }
+      }
       subqTicks.appendChild(n);
-    };
-
-    // Label sets:
-    const labels30 = [0,10,15,20,25,30];
-    const labels50 = [0,10,15,20,25,30,35,40,45,50];
-
-    if(max===30 || max===50){
-      const list = max===30 ? labels30 : labels50;
-      list.forEach(v=>{
-        const x = (v/max)*100;
-        const align = (v===0)?'left':(v===max)?'right':'center';
-        labelEl(v, x, align);
-      });
-    }else{
-      // U-100 smart labels with anti-overlap
-      const minLabelGap = 13; // px between label centers
-      const want = [0,10,20,30,40,50,60,70,80,90,100];
-      // Always render 0 and 100, and then greedily place others if they don't overlap
-      let placed = [];
-      // helper to test overlap by reading getBoundingClientRect after DOM attach
-      const temp = [];
-      // Pre-create to measure, then remove if overlapping
-      want.forEach(v=>{
-        const x = (v/max)*100;
-        const align = (v===0)?'left':(v===100)?'right':'center';
-        const n = document.createElement('div');
-        n.className='subq-num';
-        n.textContent=String(v);
-        n.style.left = x + '%';
-        if(align==='left'){ n.style.transform='translateX(0)'; n.style.textAlign='left';}
-        else if(align==='right'){ n.style.transform='translateX(-100%)'; n.style.textAlign='right';}
-        else { n.style.transform='translateX(-50%)'; }
-        subqTicks.appendChild(n);
-        temp.push({v, el:n, align});
-      });
-      // measure & prune
-      const keep = [];
-      temp.forEach((item, idx)=>{
-        const r = item.el.getBoundingClientRect();
-        // always keep first and last
-        if(item.v===0 || item.v===100){ keep.push(item); return; }
-        // check distance to previous kept
-        const prev = keep[keep.length-1];
-        const pr = prev.el.getBoundingClientRect();
-        const dx = Math.abs((r.left + r.width/2) - (pr.left + pr.width/2));
-        if(dx >= minLabelGap) keep.push(item);
-        else { item.el.remove(); }
-      });
-    }
+    });
   }
 
   // Dose helpers
@@ -587,7 +572,6 @@ document.addEventListener('DOMContentLoaded', () => {
   togglePresetRows(); recalc();
 
   /* ----------------- Developer Mode (overlay inside image) ----------------- */
-  // Read/write CSS vars as % or px
   const getVar = (name, fallback) => {
     const v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
     if(!v) return fallback;
@@ -597,9 +581,8 @@ document.addEventListener('DOMContentLoaded', () => {
   };
   const setVar = (name, val) => document.documentElement.style.setProperty(name, val.toFixed(2)+'%');
   const setVarPx = (name, val) => document.documentElement.style.setProperty(name, Math.round(val)+'px');
-  const pct = (n)=>Math.max(0,Math.min(100,n));
+  const pctClamp = (n)=>Math.max(0,Math.min(100,n));
 
-  // Current values
   let L=getVar('--b-left',15), R=getVar('--b-right',19), T=getVar('--b-top',46.5), H=getVar('--b-height',13);
   let S=getVar('--barrel-shift',0); // px
   const stepPct=0.25, stepPx=1;
@@ -616,26 +599,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const big = e.shiftKey? 4:1;
     switch(e.key){
-      // Fine overlay (%)
-      case ';': L=pct(L-stepPct); setVar('--b-left',L); break;
-      case "'": L=pct(L+stepPct); setVar('--b-left',L); break;
-      case '[': R=pct(R-stepPct); setVar('--b-right',R); break;
-      case ']': R=pct(R+stepPct); setVar('--b-right',R); break;
-      case ',': T=pct(T-stepPct); setVar('--b-top',T); break;
-      case '.': T=pct(T+stepPct); setVar('--b-top',T); break;
-      case '-': H=pct(H-stepPct); setVar('--b-height',H); break;
-      case '=': H=pct(H+stepPct); setVar('--b-height',H); break;
+      case ';': L=pctClamp(L-stepPct); setVar('--b-left',L); break;
+      case "'": L=pctClamp(L+stepPct); setVar('--b-left',L); break;
+      case '[': R=pctClamp(R-stepPct); setVar('--b-right',R); break;
+      case ']': R=pctClamp(R+stepPct); setVar('--b-right',R); break;
+      case ',': T=pctClamp(T-stepPct); setVar('--b-top',T); break;
+      case '.': T=pctClamp(T+stepPct); setVar('--b-top',T); break;
+      case '-': H=pctClamp(H-stepPct); setVar('--b-height',H); break;
+      case '=': H=pctClamp(H+stepPct); setVar('--b-height',H); break;
 
-      // Coarse overlay with arrows
-      case 'ArrowLeft':  L=pct(L-(stepPct*big)); setVar('--b-left',L); break;
-      case 'ArrowRight': L=pct(L+(stepPct*big)); setVar('--b-left',L); break;
-      case 'ArrowUp':    T=pct(T-(stepPct*big)); setVar('--b-top',T); break;
-      case 'ArrowDown':  T=pct(T+(stepPct*big)); setVar('--b-top',T); break;
+      case 'ArrowLeft':  L=pctClamp(L-(stepPct*big)); setVar('--b-left',L); break;
+      case 'ArrowRight': L=pctClamp(L+(stepPct*big)); setVar('--b-left',L); break;
+      case 'ArrowUp':    T=pctClamp(T-(stepPct*big)); setVar('--b-top',T); break;
+      case 'ArrowDown':  T=pctClamp(T+(stepPct*big)); setVar('--b-top',T); break;
 
-      // Optional blue fill pixel nudge
       case 'q': case 'Q': S-=stepPx*big; setVarPx('--barrel-shift',S); break;
       case 'e': case 'E': S+=stepPx*big; setVarPx('--barrel-shift',S); break;
-
       default: return;
     }
     e.preventDefault();
