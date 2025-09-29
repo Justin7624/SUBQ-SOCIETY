@@ -99,13 +99,14 @@
   /* SUBQ Syringe overlayed on the image */
   .subq-card{background:linear-gradient(180deg, #1a1b21, #131419);border:1px solid #23242b;border-radius:16px;padding:18px}
   .subq-wrapper{position:relative;display:block;width:100%;max-width:980px;margin:8px auto 0}
-  .subq-wrapper img{display:block;width:100%;height:auto;border-radius:10px}
+  .subq-wrapper img{display:block;width:100%;height:auto;border-radius:10px;position:relative;z-index:2;}
   .subq-overlay{
     position:absolute;
     pointer-events:none; /* do not block UI */
     left:var(--b-left); right:var(--b-right); top:var(--b-top);
     height:var(--b-height);
     display:flex; align-items:center; justify-content:center;
+    z-index:1; /* put overlay behind image so the tail wraps over it */
   }
   .subq-track{
     position:relative;width:100%;height:100%;
@@ -403,37 +404,41 @@ document.addEventListener('DOMContentLoaded', () => {
     const pxPerUnit = widthPx / max;
 
     // Minimum gap between printed numbers (in px)
-    // This prevents crowding at 100% zoom on smaller screens.
-    const minLabelGap = 13;   // try 18–22px; adjust to taste
+    const minLabelGap = 13;
     let lastLabelX = -Infinity;
 
-    // Draw minor ticks at every 'minorStep', mid-ticks at 5-unit marks (when sensible), majors at 'majorStep'
+    // Draw minor/mid/major ticks
     for(let i=0;i<=max;i+=minorStep){
-      const x = (i/max) * 100; // percent within ticks box
+      const x = (i/max) * 100;
 
       const tick = document.createElement('div');
       tick.className = 'subq-tick min';
       tick.style.left = `calc(${x}% - 0.5px)`;
 
-      // mid tick (half of a major step), only for U-100 -> at every 5
       if (max===100 && i%5===0 && i%10!==0) tick.className = 'subq-tick mid';
-
-      // major tick
       if (i%majorStep===0) tick.className = 'subq-tick maj';
 
       subqTicks.appendChild(tick);
 
-      // Number labels only at 10s (or majors for 30/50). Use anti-overlap rule.
+      // Labels: U-100 only at 10s with anti-overlap. U-30/50 follow majors (no anti-overlap).
       const showNumber = (max===100) ? (i%10===0) : (i%majorStep===0);
       if (showNumber){
-        const xPx = i * pxPerUnit;
-        if (xPx - lastLabelX >= minLabelGap || i===0){
+        if (max===100){
+          const xPx = i * pxPerUnit;
+          if (xPx - lastLabelX >= minLabelGap || i===0){
+            const lab = document.createElement('div');
+            lab.className = 'subq-num';
+            lab.style.left = (x) + '%';
+            lab.textContent = String(i);
+            subqTicks.appendChild(lab);
+            lastLabelX = xPx;
+          }
+        } else {
           const lab = document.createElement('div');
           lab.className = 'subq-num';
           lab.style.left = (x) + '%';
           lab.textContent = String(i);
           subqTicks.appendChild(lab);
-          lastLabelX = xPx;
         }
       }
     }
