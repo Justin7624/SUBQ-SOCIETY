@@ -37,14 +37,12 @@
     }
     .input:focus{border-color:#5c6ae6;outline-color:#3d44a3}
 
-    /* Desired dose group */
     .dose-group{display:grid;grid-template-columns:1fr 110px;gap:8px}
     .unit-select{width:110px;min-height:46px;font-size:16px}
     .field.dose{grid-column:span 8}
     @media (max-width:900px){ .field.dose{grid-column:span 12} }
     @media (max-width:420px){ .dose-group{grid-template-columns:1fr 96px}.unit-select{width:96px} }
 
-    /* Number input rendering on mobile */
     input[type="number"]{appearance:textfield;-webkit-appearance:textfield;-webkit-text-fill-color:var(--ink);color:var(--ink);background-color:#0d0e12}
     input[type="number"]::-webkit-outer-spin-button,
     input[type="number"]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
@@ -73,16 +71,17 @@
     /* Brand syringe visual */
     .brand-syringe{
       position:relative;
-      aspect-ratio:1413/768;        /* keeps PNG perfectly proportional */
+      aspect-ratio:1413/768;        /* keeps PNG proportional */
       background:#0c0d11 url('IMG_20250928_220440.png') center/contain no-repeat;
       border:1px solid #272930;border-radius:14px;padding:12px;margin-top:8px;
     }
-    /* Barrel window (clip area) – tweak the four vars if needed */
+    /* Barrel window (clip area) – tuned to align with the real barrel in the PNG.
+       If you need to micro-adjust, nudge by ±1%: */
     .brand-syringe .barrel{
-      --b-left: 31.5%;
-      --b-right: 23%;
-      --b-top: 45%;
-      --b-h: 11.8%;
+      --b-left: 39.8%;   /* start exactly at the barrel's left wall */
+      --b-right: 33.0%;  /* end just before the plunger head */
+      --b-top: 46.1%;
+      --b-h: 10.6%;
       position:absolute;left:var(--b-left);right:var(--b-right);top:var(--b-top);height:var(--b-h);
       border-radius:8px;overflow:hidden;
     }
@@ -91,9 +90,9 @@
       background:linear-gradient(90deg, var(--accent), #5b9dff);
       box-shadow:inset 0 0 12px rgba(255,255,255,.25), 0 0 16px rgba(124,92,255,.35);
     }
-    /* Everything below now lives INSIDE the barrel for perfect alignment */
+    /* Ticks & cursor live INSIDE the barrel so they always align */
     .brand-syringe .ticks-overlay{
-      position:absolute;left:0;right:0;bottom:0;top:0;width:100%;height:100%;pointer-events:none;
+      position:absolute;left:0;right:0;top:0;bottom:0;width:100%;height:100%;pointer-events:none;
     }
     .brand-syringe .cursor-line{
       position:absolute;top:-6px;bottom:-6px;left:0;width:2px;
@@ -117,7 +116,6 @@
   </style>
 </head>
 <body>
-  <!-- Hero banner with tight spacing -->
   <img src="IMG_20250926_184644.png" alt="SUBQ SOCIETY – THE UNDERGROUND PROTOCOL" style="max-width:100%;height:auto;display:block;margin:0 auto 12px auto;">
 
   <div class="wrap">
@@ -152,7 +150,6 @@
             </select>
           </div>
 
-          <!-- Desired dose with unit toggle -->
           <div class="field sm dose">
             <label for="doseVal">Desired dose</label>
             <div class="dose-group">
@@ -168,7 +165,6 @@
         <div style="margin-top:10px">
           <label>Quick select dose</label>
 
-          <!-- mcg presets -->
           <div id="presets-mcg" class="btns" role="group" aria-label="Preset doses (mcg)" style="display:none">
             <button class="pill preset" data-dose="50" data-unit="mcg" aria-pressed="true">50 mcg</button>
             <button class="pill preset" data-dose="100" data-unit="mcg">100 mcg</button>
@@ -176,7 +172,6 @@
             <button class="pill preset" data-dose="500" data-unit="mcg">500 mcg</button>
           </div>
 
-          <!-- mg presets -->
           <div id="presets-mg" class="btns" role="group" aria-label="Preset doses (mg)">
             <button class="pill preset" data-dose="1" data-unit="mg" aria-pressed="true">1 mg</button>
             <button class="pill preset" data-dose="2" data-unit="mg">2 mg</button>
@@ -192,13 +187,11 @@
       <section class="card" aria-labelledby="visTitle">
         <h2 id="visTitle" class="big" style="margin:6px 0 12px">Visual Aid</h2>
 
-        <!-- view toggle -->
         <div class="view-toggle" role="group" aria-label="Choose visualization">
           <button class="seg" id="viewBrand" aria-pressed="true">SUBQ Syringe</button>
           <button class="seg" id="viewClassic" aria-pressed="false">Classic</button>
         </div>
 
-        <!-- headline -->
         <h3 style="margin:0 0 10px 0;font-size:18px">
           To have a dose of
           <span id="doseOut">0.5</span>
@@ -208,7 +201,7 @@
           <span id="unitWord">units</span>
         </h3>
 
-        <!-- SUBQ Syringe visual -->
+        <!-- Brand visual -->
         <div id="brandVisual" class="brand-syringe">
           <div class="barrel" id="brandBarrel">
             <div class="brand-fill" id="brandFill"></div>
@@ -295,7 +288,6 @@
       const fmt=(n,d=2)=>Number.isFinite(n)?n.toFixed(d).replace(/\.0+$/,'').replace(/(\.[1-9]*)0+$/,'$1'):'—';
 
       function buildTicks(){
-        // Classic ticks
         if (ticks) {
           ticks.innerHTML='';
           const max=parseInt(syrSize.value,10)||30;
@@ -310,7 +302,6 @@
             ticks.appendChild(t);
           }
         }
-        // Brand ticks (inside barrel)
         drawBrandTicks(parseInt(syrSize.value,10)||30);
       }
 
@@ -318,14 +309,12 @@
         if (!brandTicks) return;
         while (brandTicks.firstChild) brandTicks.removeChild(brandTicks.firstChild);
 
-        // The barrel SVG is 1000x100 "units". We draw ticks inside.
         const W = 1000, H = 100;
         brandTicks.setAttribute('viewBox', `0 0 ${W} ${H}`);
 
         const minor = (maxUnits <= 30) ? 1 : 5;
         const major = (maxUnits <= 30) ? 5 : 10;
 
-        // baseline near bottom of barrel
         const base = document.createElementNS('http://www.w3.org/2000/svg','line');
         base.setAttribute('x1','0'); base.setAttribute('y1','70');
         base.setAttribute('x2',String(W)); base.setAttribute('y2','70');
@@ -365,10 +354,9 @@
       function setBrandCursorPercent(pct){
         if (!brandCursor) return;
         const p = Math.max(0,Math.min(100,pct));
-        brandCursor.style.left = p + '%';   // relative to .barrel width
+        brandCursor.style.left = p + '%';   // relative to barrel width
       }
 
-      // Normalize desired dose to mcg for math
       function getDesiredDoseMcg(){
         const val = parseFloat(doseVal.value);
         if(!Number.isFinite(val) || val <= 0) return NaN;
@@ -405,13 +393,13 @@
         mlOut.textContent = Number.isFinite(mlToPull) ? `${fmt(mlToPull,3)} mL` : '—';
         if(Number.isFinite(units)) unitWord.textContent = Math.abs(units-1)<0.005 ? 'unit' : 'units';
 
-        const pct=Number.isFinite(units)?clamp(units/maxUnits*100,0,100):0;
+        const pct=Number.isFinite(units)?Math.min(100,Math.max(0,units/maxUnits*100)):0;
 
         // Classic UI
         if (fill) fill.style.width = pct+'%';
         if (cursor) cursor.style.left = `calc(${pct}% - 1px)`;
 
-        // Brand UI (all inside barrel)
+        // Brand UI (inside barrel)
         setBrandFillPercent(pct);
         setBrandCursorPercent(pct);
 
@@ -423,7 +411,6 @@
         }
       }
 
-      // Presets
       function wirePresets(row){
         row.querySelectorAll('.preset').forEach(btn=>{
           btn.addEventListener('click',()=>{
@@ -450,7 +437,6 @@
         if(prev==='mg'  && next==='mcg') doseVal.value = (val*1000).toString();
       }
 
-      // View toggle
       function setView(which){
         if (which==='brand'){
           brandVisual.style.display='block';
@@ -464,10 +450,11 @@
           viewClassicBtn.setAttribute('aria-pressed','true');
         }
       }
-      $('viewBrand').addEventListener('click', ()=> setView('brand'));
-      $('viewClassic').addEventListener('click', ()=> setView('classic'));
+      const viewBrandBtn = $('viewBrand');
+      const viewClassicBtn = $('viewClassic');
+      viewBrandBtn.addEventListener('click', ()=> setView('brand'));
+      viewClassicBtn.addEventListener('click', ()=> setView('classic'));
 
-      // Events
       ['input','change'].forEach(evt=>{
         [vialMg,diluentMl,syrSize,doseVal].forEach(el=>{
           el.addEventListener(evt,()=>{
@@ -489,16 +476,13 @@
         recalc();
       });
 
-      // Init
       wirePresets(presetsMcg);
       wirePresets(presetsMg);
       doseUnit.dataset.prev = doseUnit.value;
       buildTicks();
       togglePresetRows();
-      setView('brand');   // default
+      setView('brand');
       recalc();
-
-      // Optional: if you want to fine-tune barrel fit later, tweak the 4 CSS vars in .brand-syringe .barrel
     });
   </script>
 </body>
