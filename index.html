@@ -15,6 +15,8 @@
     --b-left:36.50%; --b-right:28.50%; --b-top:42.50%; --b-height:13.50%;
     /* optional pixel nudge for the blue fill only (debug) */
     --barrel-shift:0px;
+    /* label vertical nudge (closer to ticks = a less-negative value) */
+    --label-offset:-10px;
   }
   *{box-sizing:border-box}
   html{-webkit-text-size-adjust:100%}
@@ -130,9 +132,11 @@
   .subq-tick.mid{height:9px}
   .subq-tick.maj{height:12px}
   .subq-num{
-    position:absolute;bottom:-16px;
+    position:absolute;
+    bottom:var(--label-offset);
     font-size:clamp(10px, 0.95vw, 14px);
-    color:#cfd4df;transform:translateX(-50%);white-space:nowrap;letter-spacing:0.02em
+    color:#cfd4df;transform:translateX(-50%);white-space:nowrap;letter-spacing:0.02em;
+    text-shadow:0 0 2px rgba(0,0,0,.6); /* subtle lift for readability */
   }
 
   /* Debug HUD */
