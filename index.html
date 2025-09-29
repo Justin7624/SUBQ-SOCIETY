@@ -2,132 +2,193 @@
 <html lang="en">
 <head>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Peptide Calculator</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
 <style>
-:root{
-  --bg:#0f0f12;--card:#15161a;--ink:#e7e7ea;--muted:#9aa0ab;
-  --accent:#7c5cff;--accent-2:#25d0a6;--error:#ff6b6b;
-}
-*{box-sizing:border-box}
-html{-webkit-text-size-adjust:100%}
-body{margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
-  background:radial-gradient(1100px 700px at 100% -50%, #1b1c22 30%, #0f0f12 70%),var(--bg);color:var(--ink)}
-.wrap{max-width:1080px;margin:auto;padding:24px}
-header{display:flex;gap:14px;align-items:center;justify-content:space-between;margin-bottom:18px}
-.brand{display:flex;gap:12px;align-items:center}
-.logo{width:46px;height:46px;border-radius:8px;overflow:hidden;display:flex;align-items:center;justify-content:center;background:#0d0e12;border:1px solid #2a2c33}
-.logo img{width:100%;height:100%;object-fit:contain;display:block}
-h1{font-size:clamp(22px,3vw,32px);margin:0;font-weight:800;letter-spacing:-0.02em}
+  :root{
+    --bg:#0f0f12;--card:#15161a;--ink:#e7e7ea;--muted:#9aa0ab;
+    --accent:#7c5cff;--accent-2:#25d0a6;--error:#ff6b6b;
 
-.card{background:linear-gradient(180deg, #1a1b21, #131419);border:1px solid #23242b;box-shadow:0 10px 30px rgba(0,0,0,.25), inset 0 1px 0 rgba(255,255,255,.03);border-radius:16px;padding:18px}
-.grid{display:grid;grid-template-columns:1fr;gap:16px}
-@media(min-width:900px){.grid{grid-template-columns:1.1fr .9fr}}
+    /* SUBQ barrel overlay defaults (percentages relative to the *image box*) */
+    --b-left: 40.0%;     /* where barrel starts, % from image left */
+    --b-right: 30.0%;    /* where barrel ends, % from image right */
+    --b-top: 46.0%;      /* top position of barrel, % from image top */
+    --b-height: 12.0%;   /* height of barrel, % of image height */
 
-label{display:block;font-size:12px;color:var(--muted);margin-bottom:6px}
-.row{display:grid;grid-template-columns:repeat(12,1fr);gap:10px}
-.field{grid-column:span 6}
-.field.sm{grid-column:span 4}
+    /* small pixel nudge of entire overlay (rarely needed) */
+    --barrel-shift-x: 0px;
+    --barrel-shift-y: 0px;
+  }
 
-.input{
-  width:100%;background:#0d0e12;color:var(--ink);
-  border:1px solid #2a2c33;border-radius:12px;
-  padding:12px 14px;font-size:16px;line-height:1.3;min-height:46px;
-  caret-color:#fff;outline:2px solid transparent;outline-offset:2px;
-  transition:border .15s ease, outline .15s ease;text-align:left;
-}
-.input:focus{border-color:#5c6ae6;outline-color:#3d44a3}
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    margin:0;
+    font-family:Inter,system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+    background:radial-gradient(1100px 700px at 100% -50%, #1b1c22 30%, #0f0f12 70%),var(--bg);
+    color:var(--ink)
+  }
 
-/* dose field gets extra width on desktop + full width on phones */
-.dose-group{display:grid;grid-template-columns:1fr 110px;gap:8px}
-.unit-select{width:110px;min-height:46px;font-size:16px}
-.field.dose{grid-column:span 8}
-@media (max-width:900px){ .field.dose{grid-column:span 12} }
-@media (max-width:420px){ .dose-group{grid-template-columns:1fr 96px}.unit-select{width:96px} }
+  /* hero */
+  .hero{max-width:100%;height:auto;display:block;margin:0 auto 12px auto}
 
-/* numeric input quirks */
-input[type="number"]{appearance:textfield;-webkit-appearance:textfield;-webkit-text-fill-color:var(--ink);color:var(--ink);background:#0d0e12}
-input[type="number"]::-webkit-outer-spin-button,
-input[type="number"]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
-::placeholder{color:var(--muted);opacity:.8}
-input:-webkit-autofill{-webkit-text-fill-color:var(--ink)!important;transition:background-color 9999s ease-in-out 0s}
+  .wrap{max-width:1080px;margin:auto;padding:24px}
+  header{display:flex;gap:14px;align-items:center;justify-content:space-between;margin-bottom:18px}
+  .brand{display:flex;gap:12px;align-items:center}
+  .logo{width:46px;height:46px;border-radius:8px;overflow:hidden;display:flex;align-items:center;justify-content:center;background:#0d0e12;border:1px solid #2a2c33}
+  .logo img{width:100%;height:100%;object-fit:contain;display:block}
+  h1{font-size:clamp(22px,3vw,32px);margin:0;font-weight:800;letter-spacing:-0.02em}
 
-.btns{display:flex;flex-wrap:wrap;gap:10px}
-button.pill{background:#0d0e12;border:1px solid #2a2c33;color:var(--ink);padding:10px 14px;border-radius:999px;cursor:pointer;font-weight:600}
-button.pill[aria-pressed="true"],button.pill:hover{border-color:#4d8cff;background:#111424}
+  .card{
+    background:linear-gradient(180deg, #1a1b21, #131419);
+    border:1px solid #23242b;
+    box-shadow:0 10px 30px rgba(0,0,0,.25), inset 0 1px 0 rgba(255,255,255,.03);
+    border-radius:16px;padding:18px
+  }
+  .grid{display:grid;grid-template-columns:1fr;gap:16px}
+  @media(min-width:900px){.grid{grid-template-columns:1.1fr .9fr}}
 
-.muted{color:var(--muted)}
-.big{font-size:clamp(18px,3vw,24px);font-weight:800}
+  label{display:block;font-size:12px;color:var(--muted);margin-bottom:6px}
+  .row{display:grid;grid-template-columns:repeat(12,1fr);gap:10px}
+  .field{grid-column:span 6}
+  .field.sm{grid-column:span 4}
+  .field.dose{grid-column:span 8}
+  @media (max-width:900px){ .field.dose{grid-column:span 12} }
 
-/* Classic visual */
-.syringe{background:#0c0d11;border:1px solid #272930;border-radius:14px;padding:18px}
-.tube{position:relative;height:36px;border-radius:18px;background:linear-gradient(180deg,#11131a,#0b0c10);border:1px solid #2a2c33;box-shadow:inset 0 2px 8px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.05)}
-.fill{position:absolute;left:0;top:0;bottom:0;width:0%;background:linear-gradient(90deg, var(--accent), #5b9dff);border-radius:18px;box-shadow:inset 0 0 12px rgba(255,255,255,.25), 0 0 16px rgba(124,92,255,.45)}
-.cap{position:absolute;left:-8px;top:50%;translate:0 -50%;width:18px;height:18px;border-radius:50%;background:linear-gradient(180deg,#4e556a,#262a33);border:1px solid #6b7388}
-.ticks{position:relative;display:flex;justify-content:space-between;align-items:flex-start;margin-top:10px;padding:0 2px}
-.tick{position:relative;width:1px;background:#3a3d47}
-.tick.minor{height:10px;opacity:.55}
-.tick.major{height:16px}
-.tick .n{position:absolute;top:18px;left:50%;transform:translateX(-50%);font-size:12px;color:var(--muted)}
-.cursor{position:absolute;top:-8px;width:2px;background:var(--accent-2);height:52px;border-radius:2px;box-shadow:0 0 0 2px rgba(37,208,166,.15)}
+  .input{
+    width:100%;background:#0d0e12;color:var(--ink);
+    border:1px solid #2a2c33;border-radius:12px;
+    padding:12px 14px;font-size:16px;line-height:1.3;min-height:46px;
+    caret-color:#fff;outline:2px solid transparent;outline-offset:2px;
+    transition:border .15s ease, outline .15s ease;text-align:left;
+  }
+  .input:focus{border-color:#5c6ae6;outline-color:#3d44a3}
 
-/* Brand syringe (your image) */
-.brand-syringe{
-  position:relative;aspect-ratio:1413/768;
-  background:#0c0d11 url('IMG_20250928_220440.png') center/contain no-repeat;
-  border:1px solid #272930;border-radius:14px;padding:12px;margin-top:8px;pointer-events:none;
-}
-.brand-syringe *{pointer-events:none}
-.brand-syringe .barrel{
-  /* percentage anchors (coarse) */
-  --b-left: 39.00%;
-  --b-right: 29.60%;
-  --b-top: 46.20%;
-  --b-height: 15.30%;
-  /* pixel nudges (fine) */
-  --barrel-shift-x: -8.0px;
-  --barrel-shift-y: -12.0px;
+  .dose-group{display:grid;grid-template-columns:1fr 110px;gap:8px}
+  .unit-select{width:110px;min-height:46px;font-size:16px}
+  @media (max-width:420px){
+    .dose-group{grid-template-columns:1fr 96px}
+    .unit-select{width:96px}
+  }
 
-  position:absolute;left:var(--b-left);right:var(--b-right);top:var(--b-top);height:var(--b-height);
-  transform:translate(var(--barrel-shift-x),var(--barrel-shift-y));
-  border-radius:8px;overflow:hidden;
-}
-.brand-fill{position:absolute;left:0;top:0;bottom:0;width:0%;background:linear-gradient(90deg,var(--accent),#5b9dff);box-shadow:inset 0 0 12px rgba(255,255,255,.25),0 0 16px rgba(124,92,255,.35)}
-.cursor-line{position:absolute;top:-6px;bottom:-6px;left:0;width:2px;background:var(--accent-2);border-radius:2px;box-shadow:0 0 0 2px rgba(37,208,166,.15);transform:translateX(0)}
-.ticks-overlay{position:absolute;left:0;right:0;top:0;bottom:0;width:100%;height:100%}
+  input[type="number"]{
+    appearance:textfield;-webkit-appearance:textfield;
+    -webkit-text-fill-color: var(--ink); color: var(--ink); background-color:#0d0e12;
+  }
+  input[type="number"]::-webkit-outer-spin-button,
+  input[type="number"]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+  ::placeholder{color:var(--muted);opacity:.8}
 
-.view-toggle{display:flex;gap:8px;margin:6px 0 12px}
-.view-toggle .seg{padding:8px 12px;border:1px solid #2a2c33;background:#0d0e12;color:var(--ink);border-radius:10px;cursor:pointer;font-weight:600}
-.view-toggle .seg[aria-pressed="true"],.view-toggle .seg:hover{border-color:#4d8cff;background:#111424}
+  .btns{display:flex;flex-wrap:wrap;gap:10px}
+  button.pill{background:#0d0e12;border:1px solid #2a2c33;color:var(--ink);padding:10px 14px;border-radius:999px;cursor:pointer;font-weight:600}
+  button.pill[aria-pressed="true"],button.pill:hover{border-color:#4d8cff;background:#111424}
 
-.note{font-size:13px;color:var(--muted)}
-.result{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:26px}
-.chip{background:#0c0d11;border:1px solid #2a2c33;border-radius:12px;padding:10px 12px}
-.chip .k{color:var(--muted);font-size:12px}
-.chip .v{font-weight:800;font-size:18px}
-.warn{color:var(--error);font-weight:700}
-footer{margin-top:26px;color:var(--muted);font-size:12px}
-a{color:#8fb6ff}
+  .muted{color:var(--muted)}
+  .big{font-size:clamp(18px,3vw,24px);font-weight:800}
 
-/* DEBUG */
-body.debug .brand-syringe .barrel{outline:2px dashed rgba(37,208,166,.7);background:rgba(255,255,255,.04)}
-.debug-hud{position:fixed;right:10px;bottom:10px;background:#0c0d11;border:1px solid #2a2c33;border-radius:10px;padding:8px 10px;font-size:12px;color:#cfe;box-shadow:0 6px 20px rgba(0,0,0,.35);display:none;z-index:9999}
-body.debug .debug-hud{display:block}
-.debug-hud kbd{background:#111425;border:1px solid #2a2c33;border-radius:6px;padding:1px 5px;margin:0 2px;font-size:11px}
-.debug-hud .vals{font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace}
+  /* visual tabs */
+  .tabs{display:flex;gap:8px;margin:4px 0 10px}
+  .tabs .pill{padding:8px 12px}
+
+  /* Classic syringe */
+  .syringe{background:#0c0d11;border:1px solid #272930;border-radius:14px;padding:18px}
+  .syringe h3{margin:0 0 10px 0;font-size:18px}
+  .tube{position:relative;height:36px;border-radius:18px;background:linear-gradient(180deg,#11131a,#0b0c10);border:1px solid #2a2c33;box-shadow:inset 0 2px 8px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.05)}
+  .fill{position:absolute;left:0;top:0;bottom:0;width:0%;background:linear-gradient(90deg, var(--accent), #5b9dff);border-radius:18px;box-shadow:inset 0 0 12px rgba(255,255,255,.25), 0 0 16px rgba(124,92,255,.45)}
+  .cap{position:absolute;left:-8px;top:50%;translate:0 -50%;width:18px;height:18px;border-radius:50%;background:linear-gradient(180deg,#4e556a,#262a33);border:1px solid #6b7388}
+  .ticks{position:relative;display:flex;justify-content:space-between;align-items:flex-start;margin-top:10px;padding:0 2px}
+  .tick{position:relative;width:1px;background:#3a3d47}
+  .tick.minor{height:10px;opacity:.55}
+  .tick.major{height:16px}
+  .tick .n{position:absolute;top:18px;left:50%;transform:translateX(-50%);font-size:12px;color:var(--muted)}
+  .cursor{position:absolute;top:-8px;width:2px;background:var(--accent-2);height:52px;border-radius:2px;box-shadow:0 0 0 2px rgba(37,208,166,.15)}
+
+  .note{font-size:13px;color:var(--muted)}
+  .result{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:26px}
+  .chip{background:#0c0d11;border:1px solid #2a2c33;border-radius:12px;padding:10px 12px}
+  .chip .k{color:var(--muted);font-size:12px}
+  .chip .v{font-weight:800;font-size:18px}
+  .warn{color:var(--error);font-weight:700}
+  footer{margin-top:26px;color:var(--muted);font-size:12px}
+  a{color:#8fb6ff}
+
+  /* SUBQ syringe stage (image + overlay that sticks to image rect) */
+  .stage{background:#0c0d11;border:1px solid #272930;border-radius:14px;padding:14px}
+  .subq-stage{position:relative;width:100%;aspect-ratio: 16/6; /* nice wide hero */ }
+  .subq-img{width:100%;height:100%;object-fit:contain;display:block;user-select:none;pointer-events:none}
+  .subq-overlay{
+    position:absolute;left:0;top:0;width:100%;height:100%;
+    pointer-events:none; /* so UI behind remains clickable */
+    /* we size/move this to the image’s *rendered* box via JS */
+  }
+
+  /* The internal barrel inside overlay uses % that are relative to the overlay,
+     which we've matched to the image’s true pixel box, so it won't drift. */
+  .subq-overlay .barrel{
+    position:absolute;
+    left:  calc(var(--b-left)  );
+    right: calc(var(--b-right) );
+    top:   calc(var(--b-top)   );
+    height:calc(var(--b-height));
+    transform: translate(var(--barrel-shift-x), var(--barrel-shift-y));
+    display:flex;align-items:center;
+  }
+  .subq-overlay .barrel .track{
+    position:relative;width:100%;height:100%;
+    border-radius:10px;overflow:hidden;
+    /* subtle glass */
+    background:linear-gradient(180deg,#0f1117,#0b0c10);
+    border:1px solid #2a2c33;
+    box-shadow:inset 0 2px 8px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.05);
+  }
+  .subq-overlay .barrel .fill{
+    position:absolute;left:0;top:0;bottom:0;width:0%;
+    background:linear-gradient(90deg, var(--accent), #5b9dff);
+    box-shadow:inset 0 0 12px rgba(255,255,255,.25), 0 0 16px rgba(124,92,255,.45);
+  }
+  .subq-overlay .barrel .thumb{
+    position:absolute;left:0;top:50%;transform:translate(-45%, -50%);
+    width:34px;height:34px;border-radius:50%;
+    background:linear-gradient(180deg,#4e556a,#262a33);border:1px solid #6b7388;
+    box-shadow:0 6px 16px rgba(0,0,0,.35);
+  }
+  .subq-overlay .tickrow{
+    position:absolute;left:0;right:0;height:44%;
+    top:6%; /* sits a bit above centerline */
+    pointer-events:none;
+  }
+  .subq-overlay .tickrow .t{position:absolute;width:1px;background:#3a3d47}
+  .subq-overlay .tickrow .t.major{height:60%}
+  .subq-overlay .tickrow .t.minor{height:35%;opacity:.55}
+  .subq-overlay .tickrow .n{
+    position:absolute;bottom:-18px;left:50%;transform:translateX(-50%);
+    font-size:11px;color:#8c93a3
+  }
+
+  /* Debug HUD */
+  .hud{
+    position:fixed;left:12px;bottom:12px;z-index:9999;
+    background:#0b0c10cc;border:1px solid #2a2c33;border-radius:12px;
+    padding:10px 12px;color:#dfe2ea;font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    font-size:14px;line-height:1.35;backdrop-filter: blur(6px);
+    display:none;
+  }
+  .hud kbd{background:#1b1d24;border:1px solid #2f3240;border-radius:6px;padding:2px 6px;margin:0 2px;font-weight:700}
+  .hud .row{display:flex;gap:14px;flex-wrap:wrap}
 </style>
 </head>
 <body>
+
 <!-- Hero banner -->
-<img src="IMG_20250926_184644.png" alt="SUBQ SOCIETY – THE UNDERGROUND PROTOCOL" style="max-width:100%;height:auto;display:block;margin:0 auto 12px auto;">
+<img class="hero" src="IMG_20250926_184644.png" alt="SUBQ SOCIETY – THE UNDERGROUND PROTOCOL">
 
 <div class="wrap">
   <header>
     <div class="brand">
-      <div class="logo"><img src="IMG_20250926_184642.png" alt="Snake syringe logo"></div>
+      <div class="logo"><img src="IMG_20250926_184642.png" alt="Snake syringe logo"/></div>
       <h1>Peptide Calculator</h1>
     </div>
   </header>
@@ -136,14 +197,15 @@ body.debug .debug-hud{display:block}
     <!-- LEFT: Inputs -->
     <section class="card" aria-labelledby="inputsTitle">
       <h2 id="inputsTitle" class="big" style="margin:6px 0 12px">Setup</h2>
+
       <div class="row">
         <div class="field sm">
           <label for="vialMg">Peptide per vial (mg)</label>
-          <input id="vialMg" class="input" type="number" step="0.1" value="5">
+          <input id="vialMg" class="input" type="number" step="0.1" value="5"/>
         </div>
         <div class="field sm">
           <label for="diluentMl">Diluent added (mL)</label>
-          <input id="diluentMl" class="input" type="number" step="0.1" value="1">
+          <input id="diluentMl" class="input" type="number" step="0.1" value="1"/>
         </div>
         <div class="field sm">
           <label for="syrSize">Syringe size (units scale)</label>
@@ -158,7 +220,7 @@ body.debug .debug-hud{display:block}
         <div class="field sm dose">
           <label for="doseVal">Desired dose</label>
           <div class="dose-group">
-            <input id="doseVal" class="input" type="number" step="0.001" min="0" value="0.5" inputmode="decimal" placeholder="Enter dose">
+            <input id="doseVal" class="input" type="number" step="0.001" min="0" value="0.5" inputmode="decimal" placeholder="Enter dose"/>
             <select id="doseUnit" class="input unit-select">
               <option value="mcg">mcg</option>
               <option value="mg" selected>mg</option>
@@ -169,14 +231,12 @@ body.debug .debug-hud{display:block}
 
       <div style="margin-top:10px">
         <label>Quick select dose</label>
-        <!-- mcg -->
         <div id="presets-mcg" class="btns" role="group" aria-label="Preset doses (mcg)" style="display:none">
           <button class="pill preset" data-dose="50" data-unit="mcg" aria-pressed="true">50 mcg</button>
           <button class="pill preset" data-dose="100" data-unit="mcg">100 mcg</button>
           <button class="pill preset" data-dose="250" data-unit="mcg">250 mcg</button>
           <button class="pill preset" data-dose="500" data-unit="mcg">500 mcg</button>
         </div>
-        <!-- mg -->
         <div id="presets-mg" class="btns" role="group" aria-label="Preset doses (mg)">
           <button class="pill preset" data-dose="1" data-unit="mg" aria-pressed="true">1 mg</button>
           <button class="pill preset" data-dose="2" data-unit="mg">2 mg</button>
@@ -190,37 +250,39 @@ body.debug .debug-hud{display:block}
 
     <!-- RIGHT: Visuals -->
     <section class="card" aria-labelledby="visTitle">
-      <h2 id="visTitle" class="big" style="margin:6px 0 12px">Visual Aid</h2>
+      <h2 id="visTitle" class="big" style="margin:6px 0 8px">Visual Aid</h2>
 
-      <div class="view-toggle" role="tablist" aria-label="Visual style">
-        <button id="tabBrand" class="seg" aria-pressed="true">SUBQ Syringe</button>
-        <button id="tabClassic" class="seg" aria-pressed="false">Classic</button>
+      <div class="tabs">
+        <button class="pill" id="tabSubq" aria-pressed="true">SUBQ Syringe</button>
+        <button class="pill" id="tabClassic" aria-pressed="false">Classic</button>
       </div>
 
-      <h3 style="margin:0 0 10px 0;font-size:18px">
-        To have a dose of <span id="doseOut">0.5</span> <span id="doseUnitLabel">mg</span>
-        pull the syringe to <span id="unitsOut">—</span> <span id="unitWord">units</span>
-      </h3>
+      <h3 id="headline" style="margin:0 0 10px 0;font-size:18px">To have a dose of <span id="doseOut">0.5</span> <span id="doseUnitLabel">mg</span> pull the syringe to <span id="unitsOut">—</span> <span id="unitWord">units</span></h3>
 
-      <!-- BRAND SYRINGE -->
-      <div id="brandWrap" class="brand-syringe" role="img" aria-label="SUBQ syringe visual">
-        <div id="barrel" class="barrel">
-          <div id="brandFill" class="brand-fill"></div>
-          <div id="brandCursor" class="cursor-line"></div>
-          <svg id="brandTicks" class="ticks-overlay" viewBox="0 0 1000 100" preserveAspectRatio="none" aria-hidden="true"></svg>
-        </div>
-      </div>
-
-      <!-- CLASSIC SYRINGE -->
-      <div id="classicWrap" style="display:none">
-        <div class="syringe" aria-live="polite">
-          <div class="tube" id="tube">
-            <div class="fill" id="fill"></div>
-            <div class="cap" aria-hidden="true"></div>
-            <div class="cursor" id="cursor" aria-hidden="true"></div>
+      <!-- SUBQ stage -->
+      <div id="subqCard" class="stage">
+        <div class="subq-stage" id="subqStage">
+          <img id="subqImg" class="subq-img" src="IMG_20250928_220440.png" alt="SUBQ syringe">
+          <div id="subqOverlay" class="subq-overlay">
+            <div class="barrel" id="barrel">
+              <div class="track">
+                <div class="fill" id="subqFill"></div>
+                <div class="thumb" id="subqThumb"></div>
+                <div class="tickrow" id="subqTicks"></div>
+              </div>
+            </div>
           </div>
-          <div class="ticks" id="ticks" aria-hidden="true"></div>
         </div>
+      </div>
+
+      <!-- Classic card (hidden initially) -->
+      <div id="classicCard" class="syringe" style="display:none">
+        <div class="tube">
+          <div class="fill" id="fill"></div>
+          <div class="cap" aria-hidden="true"></div>
+          <div class="cursor" id="cursor" aria-hidden="true"></div>
+        </div>
+        <div class="ticks" id="ticks" aria-hidden="true"></div>
       </div>
 
       <div class="result">
@@ -242,160 +304,177 @@ body.debug .debug-hud{display:block}
   </div>
 </div>
 
-<!-- DEBUG HUD -->
-<div id="hud" class="debug-hud" aria-live="polite">
+<!-- Developer HUD -->
+<div class="hud" id="hud">
   <div><strong>Debug mode</strong> — Press <kbd>D</kbd> to toggle</div>
-  <div>Move: <kbd>←</kbd>/<kbd>→</kbd>/<kbd>↑</kbd>/<kbd>↓</kbd> (hold <kbd>Shift</kbd> for ×4)</div>
-  <div>Left%: <kbd>;</kbd>/<kbd>'</kbd> &nbsp; Right%: <kbd>[</kbd>/<kbd>]</kbd></div>
-  <div>Top%: <kbd>,</kbd>/<kbd>.</kbd> &nbsp; Height%: <kbd>-</kbd>/<kbd>=</kbd></div>
-  <div class="vals" id="hudVals"></div>
+  <div class="row" style="margin-top:6px">
+    <div>Move: <kbd>←</kbd>/<kbd>→</kbd>/<kbd>↑</kbd>/<kbd>↓</kbd> (hold <kbd>Shift</kbd> for ×4)</div>
+  </div>
+  <div class="row">
+    <div>Left%: <kbd>;</kbd> / <kbd>'</kbd></div>
+    <div>Right%: <kbd>[</kbd> / <kbd>]</kbd></div>
+    <div>Top%: <kbd>,</kbd> / <kbd>.</kbd></div>
+    <div>Height%: <kbd>-</kbd> / <kbd>=</kbd></div>
+  </div>
+  <div id="hudVals" style="margin-top:6px"></div>
 </div>
 
 <script>
 document.addEventListener('DOMContentLoaded', () => {
   const $ = id => document.getElementById(id);
+  const root = document.documentElement;
 
-  /* Inputs */
-  const vialMg = $('vialMg');
-  const diluentMl = $('diluentMl');
-  const syrSize  = $('syrSize');
-  const doseVal  = $('doseVal');
-  const doseUnit = $('doseUnit');
+  /* ====== Inputs & Outputs ====== */
+  const vialMg = $('vialMg'), diluentMl=$('diluentMl'), syrSize=$('syrSize');
+  const doseVal=$('doseVal'), doseUnit=$('doseUnit');
+  const presetsMcg=$('presets-mcg'), presetsMg=$('presets-mg');
 
-  /* Outputs */
-  const doseOut = $('doseOut');
-  const doseUnitLabel = $('doseUnitLabel');
-  const unitsOut = $('unitsOut');
-  const unitWord = $('unitWord');
-  const mlOut = $('mlOut');
-  const potencyOut = $('potencyOut');
-  const potencyUnitLabel = $('potencyUnitLabel');
-  const unitsOutChip = $('unitsOutChip');
-  const warnEl = $('warn');
+  const doseOut=$('doseOut'), doseUnitLabel=$('doseUnitLabel');
+  const unitsOut=$('unitsOut'), unitWord=$('unitWord'), mlOut=$('mlOut');
+  const potencyOut=$('potencyOut'), potencyUnitLabel=$('potencyUnitLabel');
+  const unitsOutChip=$('unitsOutChip'), warnEl=$('warn');
+  const headline=$('headline');
 
-  /* Classic visual elements */
-  const fill = $('fill');
-  const cursor = $('cursor');
-  const ticks = $('ticks');
+  /* ====== Classic visual elems ====== */
+  const ticksClassic=$('ticks'), fillClassic=$('fill'), cursorClassic=$('cursor');
 
-  /* Brand visual elements */
-  const brandWrap = $('brandWrap');
-  const barrel = $('barrel');
-  const brandFill = $('brandFill');
-  const brandCursor = $('brandCursor');
-  const brandTicks = $('brandTicks');
+  /* ====== SUBQ elements ====== */
+  const stage=$('subqStage'), img=$('subqImg'), overlay=$('subqOverlay');
+  const barrel=$('barrel'), subqFill=$('subqFill'), subqThumb=$('subqThumb'), subqTicks=$('subqTicks');
 
-  /* Tabs */
-  const tabBrand = $('tabBrand');
-  const tabClassic = $('tabClassic');
-  const classicWrap = $('classicWrap');
+  /* ====== Tabs ====== */
+  const tabSubq=$('tabSubq'), tabClassic=$('tabClassic');
+  const subqCard=$('subqCard'), classicCard=$('classicCard');
 
-  /* Presets */
-  const presetsMcg = $('presets-mcg');
-  const presetsMg  = $('presets-mg');
-
-  /* Debug HUD */
-  const hud = $('hud');
-  const hudVals = $('hudVals');
-
+  /* ====== Helpers ====== */
   const clamp=(n,min,max)=>Math.min(max,Math.max(min,n));
   const fmt=(n,d=2)=>Number.isFinite(n)?n.toFixed(d).replace(/\.0+$/,'').replace(/(\.[1-9]*)0+$/,'$1'):'—';
 
-  /* ====== Visual toggles ====== */
-  function setView(which){
-    const isBrand = which === 'brand';
-    tabBrand.setAttribute('aria-pressed', isBrand ? 'true':'false');
-    tabClassic.setAttribute('aria-pressed', !isBrand ? 'true':'false');
-    brandWrap.style.display = isBrand ? '' : 'none';
-    classicWrap.style.display = isBrand ? 'none' : '';
-  }
-  tabBrand.addEventListener('click', ()=> setView('brand'));
-  tabClassic.addEventListener('click', ()=> setView('classic'));
-  setView('brand');
-
   /* ====== Classic ticks ====== */
   function buildClassicTicks(){
-    ticks.innerHTML='';
+    ticksClassic.innerHTML='';
     const max=parseInt(syrSize.value,10)||30;
-    const minorStep=(max<=30?1:5);
-    const majorStep=(max<=30?5:10);
+    const minorStep=(max<=30?1:5), majorStep=(max<=30?5:10);
     for(let i=0;i<=max;i+=minorStep){
       const t=document.createElement('div');
       t.className='tick '+(i%majorStep===0?'major':'minor');
       if(i%majorStep===0){
         const n=document.createElement('div'); n.className='n'; n.textContent=String(i); t.appendChild(n);
       }
-      ticks.appendChild(t);
+      ticksClassic.appendChild(t);
     }
   }
 
-  /* ====== Brand ticks (SVG) ====== */
-  function buildBrandTicks(){
-    const max = parseInt(syrSize.value,10)||30;
-    const minor = (max<=30?1:5);
-    const major = (max<=30?5:10);
-    const w = 1000, h = 100;
-    const majorH = 70, minorH = 50, baseY = 80;
-
-    let svg = `<line x1="0" y1="${baseY}" x2="${w}" y2="${baseY}" stroke="#30343d" stroke-width="2"/>`;
-    for(let i=0;i<=max;i+=minor){
-      const x = (i/max)*w;
-      const isMajor = i%major===0;
-      const y2 = isMajor ? baseY-majorH : baseY-minorH;
-      svg += `<line x1="${x}" y1="${baseY}" x2="${x}" y2="${y2}" stroke="#3a3f49" stroke-width="3"/>`;
-      if(isMajor) svg += `<text x="${x}" y="${baseY+16}" font-size="22" fill="#8b90a0" text-anchor="middle">${i}</text>`;
-    }
-    brandTicks.setAttribute('viewBox','0 0 '+w+' '+h);
-    brandTicks.innerHTML = svg;
+  /* ====== SUBQ overlay alignment (anchor to image box) ====== */
+  function syncOverlayToImageBox(){
+    const imgRect   = img.getBoundingClientRect();
+    const stageRect = stage.getBoundingClientRect();
+    overlay.style.left   = (imgRect.left - stageRect.left) + 'px';
+    overlay.style.top    = (imgRect.top  - stageRect.top)  + 'px';
+    overlay.style.width  = imgRect.width  + 'px';
+    overlay.style.height = imgRect.height + 'px';
   }
 
-  /* ====== Dose helpers ====== */
+  const ro = new ResizeObserver(syncOverlayToImageBox);
+  ro.observe(stage); ro.observe(img);
+  window.addEventListener('resize', syncOverlayToImageBox);
+  img.decode?.().then(syncOverlayToImageBox).catch(()=>{});
+  syncOverlayToImageBox();
+
+  /* ====== SUBQ ticks inside barrel (0..N) ====== */
+  function buildSubqTicks(){
+    subqTicks.innerHTML='';
+    const max=parseInt(syrSize.value,10)||30;
+    const count=max; // 0..max
+    for(let i=0;i<=count;i++){
+      const x=i/count*100;
+      const t=document.createElement('div');
+      t.className='t ' + (i%10===0?'major':'minor');
+      t.style.left = x+'%';
+      t.style.bottom='0';
+      subqTicks.appendChild(t);
+      if(i%10===0){
+        const n=document.createElement('div');
+        n.className='n'; n.textContent=String(i);
+        n.style.left='0'; t.appendChild(n);
+      }
+    }
+  }
+
+  /* ====== Unit toggle / presets ====== */
+  function togglePresetRows(){
+    const useMg = (doseUnit.value==='mg');
+    presetsMg.style.display = useMg?'flex':'none';
+    presetsMcg.style.display= useMg?'none':'flex';
+    doseUnitLabel.textContent = useMg?'mg':'mcg';
+    potencyUnitLabel.textContent=useMg?'mg':'mcg';
+  }
+
+  function convertOnUnitChange(prev,next){
+    const val=parseFloat(doseVal.value);
+    if(!Number.isFinite(val)||prev===next) return;
+    if(prev==='mcg'&&next==='mg') doseVal.value=(val/1000).toString();
+    else if(prev==='mg'&&next==='mcg') doseVal.value=(val*1000).toString();
+  }
+
+  function wirePresets(row){
+    row.querySelectorAll('.preset').forEach(btn=>{
+      btn.addEventListener('click',()=>{
+        document.querySelectorAll('.preset').forEach(b=>b.setAttribute('aria-pressed','false'));
+        btn.setAttribute('aria-pressed','true');
+        doseUnit.value=btn.dataset.unit;
+        doseVal.value=btn.dataset.dose;
+        togglePresetRows(); recalc();
+      });
+    });
+  }
+
+  /* ====== Math & visuals ====== */
   function getDesiredDoseMcg(){
-    const val = parseFloat(doseVal.value);
-    if(!Number.isFinite(val) || val <= 0) return NaN;
-    return (doseUnit.value === 'mg') ? val * 1000 : val;
+    const val=parseFloat(doseVal.value);
+    if(!Number.isFinite(val)||val<=0) return NaN;
+    return (doseUnit.value==='mg') ? val*1000 : val;
   }
 
   function recalc(){
-    const mg=parseFloat(vialMg.value);
-    const ml=parseFloat(diluentMl.value);
+    const mg=parseFloat(vialMg.value), ml=parseFloat(diluentMl.value);
     const maxUnits=parseInt(syrSize.value,10)||30;
+    const conc=(mg>0&&ml>0)?(mg/ml):NaN;       // mg/mL
+    const mcgPerUnit=Number.isFinite(conc)? conc*10 : NaN; // mcg per unit (U-100)
+    const mgPerUnit=Number.isFinite(mcgPerUnit)? mcgPerUnit/1000 : NaN;
 
-    const conc=(mg>0&&ml>0)?(mg/ml):NaN;           // mg/mL
-    const mcgPerUnit=Number.isFinite(conc)?conc*10:NaN; // mcg/unit
-    const mgPerUnit = Number.isFinite(mcgPerUnit)?(mcgPerUnit/1000):NaN;
+    const desiredMcg=getDesiredDoseMcg();
+    const units=(Number.isFinite(mcgPerUnit)&&Number.isFinite(desiredMcg))? (desiredMcg/mcgPerUnit):NaN;
+    const mlToPull=Number.isFinite(units)? units*0.01 : NaN;
 
-    const desiredMcg = getDesiredDoseMcg();
-    const units = (Number.isFinite(mcgPerUnit) && Number.isFinite(desiredMcg)) ? (desiredMcg / mcgPerUnit) : NaN;
-    const mlToPull = Number.isFinite(units) ? units*0.01 : NaN;
-
-    // Labels by unit
-    if(doseUnit.value === 'mg'){
-      doseOut.textContent = fmt(desiredMcg/1000,3);
-      doseUnitLabel.textContent = 'mg';
-      potencyOut.textContent = Number.isFinite(mgPerUnit) ? fmt(mgPerUnit,4) : '—';
-      potencyUnitLabel.textContent = 'mg';
-    } else {
-      doseOut.textContent = fmt(desiredMcg,0);
-      doseUnitLabel.textContent = 'mcg';
-      potencyOut.textContent = Number.isFinite(mcgPerUnit) ? fmt(mcgPerUnit,2) : '—';
-      potencyUnitLabel.textContent = 'mcg';
+    // Header text
+    if(doseUnit.value==='mg'){
+      doseOut.textContent=fmt(desiredMcg/1000,3);
+      doseUnitLabel.textContent='mg';
+      potencyOut.textContent=Number.isFinite(mgPerUnit)?fmt(mgPerUnit,4):'—';
+      potencyUnitLabel.textContent='mg';
+    }else{
+      doseOut.textContent=fmt(desiredMcg,0);
+      doseUnitLabel.textContent='mcg';
+      potencyOut.textContent=Number.isFinite(mcgPerUnit)?fmt(mcgPerUnit,2):'—';
+      potencyUnitLabel.textContent='mcg';
     }
+    unitsOut.textContent=fmt(units,2);
+    unitsOutChip.textContent=Number.isFinite(units)?fmt(units,2):'—';
+    mlOut.textContent=Number.isFinite(mlToPull)?`${fmt(mlToPull,3)} mL`:'—';
+    if(Number.isFinite(units)) unitWord.textContent=Math.abs(units-1)<0.005?'unit':'units';
 
-    unitsOut.textContent = fmt(units,2);
-    unitsOutChip.textContent = Number.isFinite(units)?fmt(units,2):'—';
-    mlOut.textContent = Number.isFinite(mlToPull) ? `${fmt(mlToPull,3)} mL` : '—';
-    if(Number.isFinite(units)) unitWord.textContent = Math.abs(units-1)<0.005 ? 'unit' : 'units';
-
-    // Classic bar
+    // Classic visuals
     const pct=Number.isFinite(units)?clamp(units/maxUnits*100,0,100):0;
-    fill.style.width=pct+'%';
-    cursor.style.left=`calc(${pct}% - 1px)`;
+    fillClassic.style.width=pct+'%';
+    cursorClassic.style.left=`calc(${pct}% - 1px)`;
 
-    // Brand bar (fill + cursor inside barrel)
-    brandFill.style.width = pct+'%';
-    const barrelW = barrel.clientWidth || 1;
-    brandCursor.style.transform = `translateX(${(pct/100)*barrelW}px)`;
+    // SUBQ fill/thumb inside overlay
+    subqFill.style.width=pct+'%';
+    subqThumb.style.left=`calc(${pct}% + 0px)`;
+
+    // headline (kept for accessibility)
+    headline.querySelector('#unitsOut').textContent = fmt(units,2);
 
     // warnings
     warnEl.textContent=''; warnEl.classList.remove('warn');
@@ -404,138 +483,81 @@ document.addEventListener('DOMContentLoaded', () => {
     } else if(units>maxUnits){
       warnEl.textContent=`⚠️ Dose exceeds the selected syringe scale of ${maxUnits} units.`; warnEl.classList.add('warn');
     }
-
-    // ensure ticks reflect current scale
-    buildClassicTicks();
-    buildBrandTicks();
-    updateHud();
   }
-
-  /* ====== Presets ====== */
-  function wirePresets(row){
-    row.querySelectorAll('.preset').forEach(btn=>{
-      btn.addEventListener('click',()=>{
-        document.querySelectorAll('.preset').forEach(b=>b.setAttribute('aria-pressed','false'));
-        btn.setAttribute('aria-pressed','true');
-        doseUnit.value = btn.dataset.unit;
-        doseVal.value  = btn.dataset.dose;
-        togglePresetRows();
-        recalc();
-      });
-    });
-  }
-  function togglePresetRows(){
-    const useMg = (doseUnit.value === 'mg');
-    presetsMg.style.display  = useMg ? 'flex' : 'none';
-    presetsMcg.style.display = useMg ? 'none' : 'flex';
-  }
-  wirePresets(presetsMcg); wirePresets(presetsMg);
 
   /* ====== Events ====== */
   ['input','change'].forEach(evt=>{
     [vialMg,diluentMl,syrSize,doseVal].forEach(el=>{
       el.addEventListener(evt,()=>{
         if(el!==doseVal){ document.querySelectorAll('.preset').forEach(b=>b.setAttribute('aria-pressed','false')); }
+        if(el===syrSize){ buildClassicTicks(); buildSubqTicks(); }
         recalc();
       });
     });
   });
 
-  doseUnit.addEventListener('change', ()=>{
-    const val = parseFloat(doseVal.value);
-    if(Number.isFinite(val)){
-      if(doseUnit.value==='mcg'){ // convert mg -> mcg
-        doseVal.value = (val*1000).toString();
-      } else { // convert mcg -> mg
-        doseVal.value = (val/1000).toString();
-      }
-    }
-    togglePresetRows();
-    document.querySelectorAll('.preset').forEach(b=>b.setAttribute('aria-pressed','false'));
+  doseUnit.addEventListener('change',()=>{
+    const prev=(doseUnit.dataset.prev||'mcg'), next=doseUnit.value;
+    convertOnUnitChange(prev,next); doseUnit.dataset.prev=next;
+    togglePresetRows(); document.querySelectorAll('.preset').forEach(b=>b.setAttribute('aria-pressed','false'));
     recalc();
   });
 
-  /* ====== DEBUG CONTROLS ====== */
-  let debugOn = false;
-  function getBarrelVars(){
-    const cs = getComputedStyle(barrel);
-    const left   = parseFloat(cs.getPropertyValue('--b-left'))   || 0;
-    const right  = parseFloat(cs.getPropertyValue('--b-right'))  || 0;
-    const top    = parseFloat(cs.getPropertyValue('--b-top'))    || 0;
-    const height = parseFloat(cs.getPropertyValue('--b-height')) || 0;
-    const sx     = parseFloat(cs.getPropertyValue('--barrel-shift-x')) || 0;
-    const sy     = parseFloat(cs.getPropertyValue('--barrel-shift-y')) || 0;
-    return {left,right,top,height,sx,sy};
-  }
-  function setBarrelVars(v){
-    if('left'   in v) barrel.style.setProperty('--b-left',   v.left.toFixed(2) + '%');
-    if('right'  in v) barrel.style.setProperty('--b-right',  v.right.toFixed(2) + '%');
-    if('top'    in v) barrel.style.setProperty('--b-top',    v.top.toFixed(2) + '%');
-    if('height' in v) barrel.style.setProperty('--b-height', v.height.toFixed(2) + '%');
-    if('sx'     in v) barrel.style.setProperty('--barrel-shift-x', v.sx.toFixed(1) + 'px');
-    if('sy'     in v) barrel.style.setProperty('--barrel-shift-y', v.sy.toFixed(1) + 'px');
-    updateHud();
-    recalc();
-  }
+  wirePresets(presetsMcg); wirePresets(presetsMg);
+
+  // Tabs
+  function showSubq(){ subqCard.style.display='block'; classicCard.style.display='none'; tabSubq.setAttribute('aria-pressed','true'); tabClassic.setAttribute('aria-pressed','false'); }
+  function showClassic(){ subqCard.style.display='none'; classicCard.style.display='block'; tabSubq.setAttribute('aria-pressed','false'); tabClassic.setAttribute('aria-pressed','true'); }
+  tabSubq.addEventListener('click', showSubq);
+  tabClassic.addEventListener('click', showClassic);
+
+  /* ====== Developer HUD & Keys ====== */
+  const hud=$('hud'), hudVals=$('hudVals');
+  let debugOn=false;
   function updateHud(){
-    const v = getBarrelVars();
-    hudVals.textContent =
-      `--b-left: ${v.left.toFixed(2)}% | `+
-      `--b-right: ${v.right.toFixed(2)}% | `+
-      `--b-top: ${v.top.toFixed(2)}% | `+
-      `--b-height: ${v.height.toFixed(2)}% | `+
-      `--barrel-shift-x: ${v.sx.toFixed(1)}px | `+
-      `--barrel-shift-y: ${v.sy.toFixed(1)}px`;
+    const v=(n)=>getComputedStyle(root).getPropertyValue(n).trim();
+    hudVals.textContent = `--b-left: ${v('--b-left')} | --b-right: ${v('--b-right')} | --b-top: ${v('--b-top')} | --b-height: ${v('--b-height')} | --barrel-shift-x: ${v('--barrel-shift-x')} | --barrel-shift-y: ${v('--barrel-shift-y')}`;
   }
-  function isTypingTarget(t){
-    const tag = (t && t.tagName) ? t.tagName.toUpperCase() : '';
-    return tag==='INPUT' || tag==='SELECT' || tag==='TEXTAREA' || t.isContentEditable;
+  function nudgeVarPercent(name,delta){
+    const cur=parseFloat(getComputedStyle(root).getPropertyValue(name))||0;
+    root.style.setProperty(name, (cur+delta).toFixed(2)+'%'); updateHud();
+  }
+  function nudgeVarPx(name,delta){
+    const cur=parseFloat(getComputedStyle(root).getPropertyValue(name))||0;
+    root.style.setProperty(name, (cur+delta)+'px'); updateHud();
   }
 
-  document.addEventListener('keydown', (e)=>{
-    if(e.key==='Escape'){ document.activeElement.blur(); return; }
-
-    if(e.key.toLowerCase()==='d' && !isTypingTarget(e.target)){
-      debugOn = !debugOn;
-      document.body.classList.toggle('debug', debugOn);
-      updateHud();
-      return;
-    }
+  window.addEventListener('keydown',(e)=>{
+    if(e.key.toLowerCase()==='d'){ debugOn=!debugOn; hud.style.display=debugOn?'block':'none'; updateHud(); return; }
     if(!debugOn) return;
-    if(isTypingTarget(e.target)) return;
 
-    const stepPct = e.shiftKey ? 0.4 : 0.1;   // percent
-    const stepPx  = e.shiftKey ? 4   : 1;     // pixels
-    const v = getBarrelVars();
-    let handled = true;
+    const fast=e.shiftKey?4:1;
 
-    switch(e.key){
-      case ';': v.left = clamp(v.left - stepPct, 0, 100); break;   // Left% down
-      case "'": v.left = clamp(v.left + stepPct, 0, 100); break;   // Left% up
-      case '[': v.right= clamp(v.right- stepPct, 0, 100); break;   // Right% down
-      case ']': v.right= clamp(v.right+ stepPct, 0, 100); break;   // Right% up
-      case ',': v.top   = clamp(v.top  - stepPct, 0, 100); break;  // Top% up
-      case '.': v.top   = clamp(v.top  + stepPct, 0, 100); break;  // Top% down
-      case '-': v.height= clamp(v.height- stepPct, 1, 50); break;  // Height% less
-      case '=': v.height= clamp(v.height+ stepPct, 1, 50); break;  // Height% more
-      case 'ArrowLeft':  v.sx -= stepPx; break;
-      case 'ArrowRight': v.sx += stepPx; break;
-      case 'ArrowUp':    v.sy -= stepPx; break;
-      case 'ArrowDown':  v.sy += stepPx; break;
-      default: handled=false;
-    }
-    if(handled){ e.preventDefault(); setBarrelVars(v); }
+    // pixel nudges
+    if(e.key==='ArrowLeft'){ nudgeVarPx('--barrel-shift-x', -1*fast); }
+    if(e.key==='ArrowRight'){ nudgeVarPx('--barrel-shift-x',  1*fast); }
+    if(e.key==='ArrowUp'){ nudgeVarPx('--barrel-shift-y',   -1*fast); }
+    if(e.key==='ArrowDown'){ nudgeVarPx('--barrel-shift-y',  1*fast); }
+
+    // % width & position controls
+    if(e.key===';'){ nudgeVarPercent('--b-left', -0.1*fast); }
+    if(e.key==="'"){ nudgeVarPercent('--b-left',  0.1*fast); }
+
+    if(e.key==='['){ nudgeVarPercent('--b-right', -0.1*fast); }
+    if(e.key===']'){ nudgeVarPercent('--b-right',  0.1*fast); }
+
+    if(e.key===','){ nudgeVarPercent('--b-top', -0.1*fast); }
+    if(e.key==='.') { nudgeVarPercent('--b-top',  0.1*fast); }
+
+    if(e.key==='-'){ nudgeVarPercent('--b-height', -0.1*fast); }
+    if(e.key==='='){ nudgeVarPercent('--b-height',  0.1*fast); }
   });
 
   /* ====== Init ====== */
-  togglePresetRows();
-  buildClassicTicks();
-  buildBrandTicks();
-  updateHud();
-  recalc();
-
-  /* Rebuild brand ticks on resize for crispness */
-  new ResizeObserver(()=>{ buildBrandTicks(); recalc(); }).observe(barrel);
+  doseUnit.dataset.prev=doseUnit.value;
+  buildClassicTicks(); buildSubqTicks();
+  togglePresetRows(); recalc();
+  showSubq(); // default tab
 });
 </script>
 </body>
