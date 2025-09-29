@@ -104,7 +104,6 @@
   .subq-overlay{
     position:absolute;
     pointer-events:none; /* do not block UI */
-    /* Positioned WITHIN the image, scales with it */
     left:var(--b-left); right:var(--b-right); top:var(--b-top);
     height:var(--b-height);
     display:flex; align-items:center; justify-content:center;
@@ -115,6 +114,7 @@
     border:1px solid rgba(255,255,255,.08);
     border-radius:16px; backdrop-filter: blur(2px);
     box-shadow:inset 0 1px 0 rgba(255,255,255,.05), 0 0 0 1px rgba(0,0,0,.35);
+    overflow:hidden;
   }
   .subq-fill{
     position:absolute;left:calc(0px + var(--barrel-shift));top:2px;bottom:2px;width:0%;
@@ -127,17 +127,26 @@
   }
 
   /* --- Updated tick/number rendering for SUBQ overlay --- */
-  .subq-ticks{position:absolute;left:8px;right:8px;bottom:6px;height:16px;}
-  .subq-tick{position:absolute;bottom:0;width:1px;background:#3a3d47;height:8px;opacity:.85}
-  .subq-tick.mid{height:10px;opacity:.9}
+  .subq-ticks{
+    position:absolute;left:8px;right:8px;bottom:6px;height:16px;
+    z-index:2;
+  }
+  .subq-tick{
+    position:absolute;bottom:0;width:1px;background:#aeb4c2;
+    opacity:.95;
+  }
+  .subq-tick.minor{height:6px;opacity:.7}
+  .subq-tick.mid  {height:10px;opacity:.9}
   .subq-tick.major{height:14px;opacity:1}
 
   .subq-num{
     position:absolute;left:0;bottom:-18px;
     transform:translateX(-50%);
-    color:#9aa0ab;font-weight:700;opacity:.95;
+    color:#d3d7e3;font-weight:800;opacity:.95;
     font-size:11px;letter-spacing:0.2px;
     user-select:none;pointer-events:none;
+    z-index:3;
+    text-shadow:0 1px 0 rgba(0,0,0,.45);
   }
   /* U-100: rotate tens labels like a real syringe print */
   .subq-num.u100{
@@ -346,14 +355,12 @@ document.addEventListener('DOMContentLoaded', () => {
   // SUBQ overlay elements
   const subqOverlay = $('subqOverlay');
   const subqFill    = $('subqFill');
-  const subqCursor  = $('subqCursor'); // thin green bar
+  const subqCursor  = $('subqCursor');
   const subqTicks   = $('subqTicks');
 
   // Tabs
   const tabSubq = $('tabSubq');
   const tabClassic = $('tabClassic');
-  const panelSubq = $('panelSubq');
-  const panelClassic = $('panelClassic');
 
   // Presets
   const presetsMcg = $('presets-mcg');
@@ -367,8 +374,10 @@ document.addEventListener('DOMContentLoaded', () => {
   const clamp=(n,min,max)=>Math.min(max,Math.max(min,n));
   const fmt=(n,d=2)=>Number.isFinite(n)?n.toFixed(d).replace(/\.0+$/,'').replace(/(\.[1-9]*)0+$/,'$1'):'—';
 
-  // TABS
+  // Tabs
   const setTab = (which) => {
+    const panelSubq = document.getElementById('panelSubq');
+    const panelClassic = document.getElementById('panelClassic');
     if (which==='subq'){
       tabSubq.setAttribute('aria-pressed','true'); tabSubq.setAttribute('aria-selected','true');
       tabClassic.setAttribute('aria-pressed','false'); tabClassic.setAttribute('aria-selected','false');
@@ -383,7 +392,7 @@ document.addEventListener('DOMContentLoaded', () => {
   tabClassic.addEventListener('click',()=>setTab('classic'));
   setTab('subq');
 
-  // Build tick marks (Classic)
+  // Classic ticks
   function buildTicksClassic(){
     ticks.innerHTML='';
     const max=parseInt(syrSize.value,10)||30;
@@ -399,14 +408,14 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // Build tick marks (SUBQ overlay) — U-100 looks like a real syringe
+  // SUBQ ticks — match real syringe styling
   function buildTicksSubq(){
     subqTicks.innerHTML = '';
     const max = parseInt(syrSize.value, 10) || 30;
 
     const isU100   = (max === 100);
     const majorMod = isU100 ? 10 : (max <= 30 ? 5 : 10); // 10s for 100; 5s for 30; 10s for 50
-    const midMod   = 5; // mid tick every 5 units
+    const midMod   = 5; // mid tick every 5 units for all
 
     for (let i = 0; i <= max; i++) {
       const x = (i / max) * 100;
@@ -416,16 +425,19 @@ document.addEventListener('DOMContentLoaded', () => {
       t.className = 'subq-tick';
       if (i % majorMod === 0)      t.classList.add('major');
       else if (i % midMod === 0)   t.classList.add('mid');
+      else                         t.classList.add('minor');
       t.style.left = x + '%';
       t.style.transform = 'translateX(-0.5px)';
       subqTicks.appendChild(t);
 
-      // numeric label
-      const shouldLabel =
-        (isU100 && i % 10 === 0 && i !== 0) ||       // tens only for 100-unit
-        (!isU100 && i % majorMod === 0 && i !== 0);  // majors for 30/50
+      // numbers:
+      // - U100: only tens (10,20,...100), rotated
+      // - Others: label majors (skip 0 at left edge for cleanliness)
+      const labelThis =
+        (isU100 && i % 10 === 0 && i !== 0) ||
+        (!isU100 && i % majorMod === 0 && i !== 0);
 
-      if (shouldLabel) {
+      if (labelThis) {
         const n = document.createElement('div');
         n.className = 'subq-num' + (isU100 ? ' u100' : '');
         n.style.left = x + '%';
@@ -474,8 +486,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // SUBQ overlay fill + cursor
     const pct=Number.isFinite(units)?clamp(units/maxUnits*100,0,100):0;
-    subqFill.style.width=pct+'%';
-    subqCursor.style.left=`calc(${pct}% - 1.5px)`; // thin green line
+    document.getElementById('subqFill').style.width=pct+'%';
+    document.getElementById('subqCursor').style.left=`calc(${pct}% - 1.5px)`;
 
     // Classic view mirrors
     if(doseUnit.value==='mg'){
@@ -549,7 +561,6 @@ document.addEventListener('DOMContentLoaded', () => {
   togglePresetRows(); recalc();
 
   /* ----------------- Developer Mode (overlay inside image) ----------------- */
-  // Read/write CSS vars as % or px
   const getVar = (name, fallback) => {
     const v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
     if(!v) return fallback;
@@ -561,7 +572,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const setVarPx = (name, val) => document.documentElement.style.setProperty(name, Math.round(val)+'px');
   const pctLimit = (n)=>Math.max(0,Math.min(100,n));
 
-  // Current values
   let L=getVar('--b-left',15), R=getVar('--b-right',19), T=getVar('--b-top',46.5), H=getVar('--b-height',13);
   let S=getVar('--barrel-shift',0); // px
   const stepPct=0.25, stepPx=1;
@@ -578,7 +588,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const big = e.shiftKey? 4:1;
     switch(e.key){
-      // Fine overlay (%)
       case ';': L=pctLimit(L-stepPct); setVar('--b-left',L); break;
       case "'": L=pctLimit(L+stepPct); setVar('--b-left',L); break;
       case '[': R=pctLimit(R-stepPct); setVar('--b-right',R); break;
@@ -588,13 +597,11 @@ document.addEventListener('DOMContentLoaded', () => {
       case '-': H=pctLimit(H-stepPct); setVar('--b-height',H); break;
       case '=': H=pctLimit(H+stepPct); setVar('--b-height',H); break;
 
-      // Coarse overlay with arrows
       case 'ArrowLeft':  L=pctLimit(L-(stepPct*big)); setVar('--b-left',L); break;
       case 'ArrowRight': L=pctLimit(L+(stepPct*big)); setVar('--b-left',L); break;
       case 'ArrowUp':    T=pctLimit(T-(stepPct*big)); setVar('--b-top',T); break;
       case 'ArrowDown':  T=pctLimit(T+(stepPct*big)); setVar('--b-top',T); break;
 
-      // Optional blue fill pixel nudge
       case 'q': case 'Q': S-=stepPx*big; setVarPx('--barrel-shift',S); break;
       case 'e': case 'E': S+=stepPx*big; setVarPx('--barrel-shift',S); break;
 
