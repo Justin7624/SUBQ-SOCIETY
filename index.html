@@ -385,54 +385,53 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // Build tick marks for SUBQ overlay with anti-overlap labels
+  // Build tick marks for SUBQ overlay with exact labels per syringe size
   function buildTicksSubq(){
     subqTicks.innerHTML='';
     const max = parseInt(syrSize.value,10) || 30;
 
-    // Minor tick spacing:
-    // - U-100: 2-unit minis (4 between each labeled 10)
-    // - U-50 : 1-unit minis, majors every 5
-    // - U-30 : 1-unit minis, majors every 5
-    const minorStep = (max===100) ? 2 : 1;
-    const majorStep = (max===100) ? 10 : (max<=30 ? 5 : 5);
+    // Label sets required:
+    let labelSet = [];
+    if (max === 100){
+      for (let i=0;i<=100;i+=10) labelSet.push(i); // 0,10,...100
+    } else if (max === 50){
+      labelSet = [0,10,15,20,25,30,35,40,45,50];
+    } else { // 30
+      labelSet = [0,10,15,20,25,30];
+    }
 
+    // Tick step rules:
+    const minorStep = (max===100) ? 2 : 1;         // fine ticks
+    const midEvery  = 5;                           // mid tick at 5s
+    // Major tick when it's a labeled position
+    const isMajor = (v) => labelSet.includes(v);
+
+    // Anti-overlap for labels (in px)
     const track = subqOverlay.querySelector('.subq-track');
-    const padL = 8, padR = 8;  // match .subq-ticks left/right
+    const padL = 8, padR = 8;
     const widthPx = Math.max(0, track.clientWidth - (padL + padR));
     const pxPerUnit = widthPx / max;
-
-    // Minimum gap between printed numbers (in px)
-    // This prevents crowding at 100% zoom on smaller screens.
-    const minLabelGap = 13;   // try 18–22px; adjust to taste
+    const minLabelGap = 13;  // adjust if needed
     let lastLabelX = -Infinity;
 
-    // Draw minor ticks at every 'minorStep', mid-ticks at 5-unit marks (when sensible), majors at 'majorStep'
     for(let i=0;i<=max;i+=minorStep){
-      const x = (i/max) * 100; // percent within ticks box
+      const pct = (i/max)*100;
 
-      const tick = document.createElement('div');
-      tick.className = 'subq-tick min';
-      tick.style.left = `calc(${x}% - 0.5px)`;
+      const d = document.createElement('div');
+      d.className = 'subq-tick min';
+      if (i%midEvery===0) d.className = 'subq-tick mid';
+      if (isMajor(i))     d.className = 'subq-tick maj';
+      d.style.left = `calc(${pct}% - 0.5px)`;
+      subqTicks.appendChild(d);
 
-      // mid tick (half of a major step), only for U-100 -> at every 5
-      if (max===100 && i%5===0 && i%10!==0) tick.className = 'subq-tick mid';
-
-      // major tick
-      if (i%majorStep===0) tick.className = 'subq-tick maj';
-
-      subqTicks.appendChild(tick);
-
-      // Number labels only at 10s (or majors for 30/50). Use anti-overlap rule.
-      const showNumber = (max===100) ? (i%10===0) : (i%majorStep===0);
-      if (showNumber){
+      if (isMajor(i)){
         const xPx = i * pxPerUnit;
         if (xPx - lastLabelX >= minLabelGap || i===0){
-          const lab = document.createElement('div');
-          lab.className = 'subq-num';
-          lab.style.left = (x) + '%';
-          lab.textContent = String(i);
-          subqTicks.appendChild(lab);
+          const n = document.createElement('div');
+          n.className = 'subq-num';
+          n.style.left = pct + '%';
+          n.textContent = String(i);
+          subqTicks.appendChild(n);
           lastLabelX = xPx;
         }
       }
