@@ -166,6 +166,12 @@
     <!-- LEFT: Inputs -->
     <section class="card" aria-labelledby="inputsTitle">
       <h2 id="inputsTitle" class="big" style="margin:6px 0 12px">Setup</h2>
+
+      <!-- Clear all button -->
+      <div class="btns" style="justify-content:flex-end;margin-bottom:6px">
+        <button id="clearBtn" class="pill" type="button" aria-label="Clear all inputs">Clear all</button>
+      </div>
+
       <div class="row">
         <div class="field sm">
           <label for="vialMg">Peptide per vial (mg)</label>
@@ -310,6 +316,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const syrSize  = $('syrSize');
   const doseVal  = $('doseVal');
   const doseUnit = $('doseUnit');
+  const clearBtn = $('clearBtn');
 
   // Outputs
   const doseOut = $('doseOut');
@@ -333,7 +340,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // SUBQ overlay elements
   const subqOverlay = $('subqOverlay');
   const subqFill    = $('subqFill');
-  const subqCursor  = $('subqCursor'); // thin green bar
+  const subqCursor  = $('subqCursor');
   const subqTicks   = $('subqTicks');
 
   // Tabs
@@ -347,8 +354,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const presetsMg  = $('presets-mg');
 
   // Warnings
-  const warnEl = $('warn');   // SUBQ
-  const warnC  = $('warnC');  // Classic
+  const warnEl = $('warn');
+  const warnC  = $('warnC');
 
   // Debug HUD
   const hud = $('hud');
@@ -395,10 +402,6 @@ document.addEventListener('DOMContentLoaded', () => {
     subqTicks.innerHTML='';
     const max = parseInt(syrSize.value,10) || 30;
 
-    // Minor tick spacing:
-    // - U-100: 2-unit minis (4 between each labeled 10)
-    // - U-50 : 1-unit minis, majors every 5 (labels at custom set below)
-    // - U-30 : 1-unit minis, majors every 5
     const minorStep = (max===100) ? 2 : 1;
     const majorStep = (max===100) ? 10 : 5;
 
@@ -410,9 +413,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const minLabelGap = 15;
     let lastLabelX = -Infinity;
 
-    // For 50-unit, we want labels exactly at: 0,10,15,20,25,30,35,40,45,50
     const labels50 = new Set([0,10,15,20,25,30,35,40,45,50]);
-    // For 30-unit, labels at: 0,10,15,20,25,30
     const labels30 = new Set([0,10,15,20,25,30]);
 
     for(let i=0;i<=max;i+=minorStep){
@@ -450,19 +451,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // Dose helpers
-  function getDesiredDoseMcg(){
-    const val=parseFloat(doseVal.value);
-    if(!Number.isFinite(val)||val<=0) return NaN;
-    return (doseUnit.value==='mg')? val*1000 : val;
-  }
-
   function setWarnings(units, maxUnits){
     const msg = `⚠️ Dose exceeds the selected syringe scale of ${maxUnits} units.`;
-    // SUBQ warning
     warnEl.textContent=''; warnEl.classList.remove('warn');
-    // Classic warning
-    warnC.textContent=''; warnC.classList.remove('warn');
+    warnC.textContent='';  warnC.classList.remove('warn');
 
     if(Number.isFinite(units) && units>maxUnits){
       warnEl.textContent = msg; warnEl.classList.add('warn');
@@ -480,14 +472,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const maxUnits=parseInt(syrSize.value,10)||30;
 
     const conc = (mg>0 && ml>0) ? (mg/ml) : NaN; // mg/mL
-    const mcgPerUnit = Number.isFinite(conc)? conc*10 : NaN; // (mg/mL)*(mL/Unit)*1000
+    const mcgPerUnit = Number.isFinite(conc)? conc*10 : NaN;
     const mgPerUnit  = Number.isFinite(mcgPerUnit)? (mcgPerUnit/1000) : NaN;
 
     const desiredMcg = getDesiredDoseMcg();
     const units = (Number.isFinite(mcgPerUnit) && Number.isFinite(desiredMcg)) ? (desiredMcg/mcgPerUnit) : NaN;
     const mlToPull = Number.isFinite(units)? units*0.01 : NaN;
 
-    // Top header + SUBQ stats
     if(doseUnit.value==='mg'){
       doseOut.textContent=fmt(desiredMcg/1000,3);
       doseUnitLabel.textContent='mg';
@@ -504,12 +495,10 @@ document.addEventListener('DOMContentLoaded', () => {
     mlOut.textContent=Number.isFinite(mlToPull)?`${fmt(mlToPull,3)} mL`:'—';
     if(Number.isFinite(units)) unitWord.textContent=Math.abs(units-1)<0.005?'unit':'units';
 
-    // SUBQ overlay fill + cursor
     const pct=Number.isFinite(units)?clamp(units/maxUnits*100,0,100):0;
     subqFill.style.width=pct+'%';
-    subqCursor.style.left=`calc(${pct}% - 1.5px)`; // thin green line
+    subqCursor.style.left=`calc(${pct}% - 1.5px)`;
 
-    // Classic view mirrors
     if(doseUnit.value==='mg'){
       potencyOutC.textContent=Number.isFinite(mgPerUnit)?fmt(mgPerUnit,4):'—';
       potencyUnitLabelC.textContent='mg';
@@ -522,8 +511,14 @@ document.addEventListener('DOMContentLoaded', () => {
     fill.style.width=pct+'%';
     cursor.style.left=`calc(${pct}% - 1px)`;
 
-    // Warnings (now written exactly once per panel)
     setWarnings(units, maxUnits);
+  }
+
+  // Helpers
+  function getDesiredDoseMcg(){
+    const val=parseFloat(doseVal.value);
+    if(!Number.isFinite(val)||val<=0) return NaN;
+    return (doseUnit.value==='mg')? val*1000 : val;
   }
 
   // Wire presets
@@ -553,6 +548,44 @@ document.addEventListener('DOMContentLoaded', () => {
     doseVal.value = (prev==='mcg'&&next==='mg') ? (val/1000) : (prev==='mg'&&next==='mcg') ? (val*1000) : val;
   }
 
+  // CLEAR ALL
+  function resetUI(){
+    // Outputs
+    doseOut.textContent='—';
+    doseUnitLabel.textContent=(doseUnit.value==='mg'?'mg':'mcg');
+    unitsOut.textContent='—';
+    unitWord.textContent='units';
+    mlOut.textContent='—';
+    potencyOut.textContent='—';
+    unitsOutChip.textContent='—';
+
+    potencyOutC.textContent='—';
+    mlOutC.textContent='—';
+    unitsOutChipC.textContent='—';
+
+    // Bars
+    subqFill.style.width='0%';
+    subqCursor.style.left='calc(0% - 1.5px)';
+    fill.style.width='0%';
+    cursor.style.left='calc(0% - 1px)';
+
+    // Warnings
+    warnEl.textContent=''; warnEl.classList.remove('warn');
+    warnC.textContent='';  warnC.classList.remove('warn');
+  }
+
+  clearBtn.addEventListener('click', ()=>{
+    // Clear inputs (keep syringe size and unit selection as-is)
+    vialMg.value = '';
+    diluentMl.value = '';
+    doseVal.value = '';
+    // Unpress any presets
+    document.querySelectorAll('.preset').forEach(b=>b.setAttribute('aria-pressed','false'));
+    // Reset UI without re-triggering warnings
+    resetUI();
+  });
+
+  // Listeners
   ['input','change'].forEach(evt=>{
     [vialMg,diluentMl,syrSize,doseVal].forEach(el=>{
       el.addEventListener(evt,()=>{
