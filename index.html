@@ -15,8 +15,6 @@
     --b-left:36.50%; --b-right:28.50%; --b-top:42.50%; --b-height:13.50%;
     /* optional pixel nudge for the blue fill only (debug) */
     --barrel-shift:0px;
-    /* label vertical nudge (closer to ticks = a less-negative value) */
-    --label-offset:-10px;
   }
   *{box-sizing:border-box}
   html{-webkit-text-size-adjust:100%}
@@ -90,6 +88,7 @@
   .chip .k{color:var(--muted);font-size:12px}
   .chip .v{font-weight:800;font-size:18px}
   .warn{color:var(--error);font-weight:700}
+
   footer{margin-top:26px;color:var(--muted);font-size:12px}
   a{color:#8fb6ff}
 
@@ -101,14 +100,17 @@
   /* SUBQ Syringe overlayed on the image */
   .subq-card{background:linear-gradient(180deg, #1a1b21, #131419);border:1px solid #23242b;border-radius:16px;padding:18px}
   .subq-wrapper{position:relative;display:block;width:100%;max-width:980px;margin:8px auto 0}
-  .subq-wrapper img{display:block;width:100%;height:auto;border-radius:10px;position:relative;z-index:2;}
+  .subq-wrapper img{
+    display:block;width:100%;height:auto;border-radius:10px;
+    position:relative;z-index:2; /* image above */
+  }
   .subq-overlay{
     position:absolute;
     pointer-events:none; /* do not block UI */
     left:var(--b-left); right:var(--b-right); top:var(--b-top);
     height:var(--b-height);
     display:flex; align-items:center; justify-content:center;
-    z-index:1; /* put overlay behind image so the tail wraps over it */
+    z-index:1; /* overlay behind image */
   }
   .subq-track{
     position:relative;width:100%;height:100%;
@@ -132,11 +134,9 @@
   .subq-tick.mid{height:9px}
   .subq-tick.maj{height:12px}
   .subq-num{
-    position:absolute;
-    bottom:var(--label-offset);
+    position:absolute;bottom:-10px; /* raised so the image edge won’t cover text */
     font-size:clamp(10px, 0.95vw, 14px);
-    color:#cfd4df;transform:translateX(-50%);white-space:nowrap;letter-spacing:0.02em;
-    text-shadow:0 0 2px rgba(0,0,0,.6); /* subtle lift for readability */
+    color:#cfd4df;transform:translateX(-50%);white-space:nowrap;letter-spacing:0.02em
   }
 
   /* Debug HUD */
@@ -230,10 +230,13 @@
         <button id="tabClassic" class="pill" role="tab" aria-selected="false" aria-controls="panelClassic">Classic</button>
       </div>
 
-      <h2 id="visTitle" class="big" style="margin:6px 0 12px">
+      <h2 id="visTitle" class="big" style="margin:6px 0 8px">
         To have a dose of <span id="doseOut">0.5</span> <span id="doseUnitLabel">mg</span>
         pull the syringe to <span id="unitsOut">—</span> <span id="unitWord">units</span>
       </h2>
+
+      <!-- Shared warnings per tab -->
+      <p id="warnSubq" class="note" style="margin:6px 0 10px"></p>
 
       <!-- SUBQ Syringe panel -->
       <div id="panelSubq" role="tabpanel" aria-labelledby="tabSubq">
@@ -260,7 +263,6 @@
             <div class="k"><span id="potencyUnitLabel">mg</span> per unit</div>
           </div>
         </div>
-        <p id="warn" class="note" style="margin-top:8px"></p>
       </div>
 
       <!-- Classic panel -->
@@ -285,6 +287,7 @@
             </div>
           </div>
         </div>
+        <p id="warnClassic" class="note" style="margin-top:8px"></p>
       </div>
 
       <footer>
@@ -323,7 +326,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const potencyOut = $('potencyOut');
   const potencyUnitLabel = $('potencyUnitLabel');
   const unitsOutChip = $('unitsOutChip');
-  const warnEl = $('warn');
 
   // Classic outputs
   const fill = $('fill');
@@ -349,6 +351,10 @@ document.addEventListener('DOMContentLoaded', () => {
   // Presets
   const presetsMcg = $('presets-mcg');
   const presetsMg  = $('presets-mg');
+
+  // Warnings (per tab)
+  const warnSubq = $('warnSubq');
+  const warnClassic = $('warnClassic');
 
   // Debug HUD
   const hud = $('hud');
@@ -395,45 +401,50 @@ document.addEventListener('DOMContentLoaded', () => {
     subqTicks.innerHTML='';
     const max = parseInt(syrSize.value,10) || 30;
 
-    // Minor tick spacing:
-    // - U-100: 2-unit minis (4 between each labeled 10)
-    // - U-50 : 1-unit minis, majors every 5
-    // - U-30 : 1-unit minis, majors every 5
+    // Minor tick spacing by syringe
     const minorStep = (max===100) ? 2 : 1;
-    const majorStep = (max===100) ? 10 : 5;
+
+    // Allowed label sets and "major" ticks per syringe
+    let labelSet = [];
+    if (max === 100){
+      for (let i=0;i<=100;i+=10) labelSet.push(i);
+    } else if (max === 50){
+      labelSet = [0,10,15,20,25,30,35,40,45,50];
+    } else { // 30
+      labelSet = [0,10,15,20,25,30];
+    }
 
     const track = subqOverlay.querySelector('.subq-track');
     const padL = 8, padR = 8;  // match .subq-ticks left/right
     const widthPx = Math.max(0, track.clientWidth - (padL + padR));
     const pxPerUnit = widthPx / max;
 
-    // Minimum gap between printed numbers (in px) — apply to ALL sizes
+    // Anti-overlap for all syringe sizes
     const minLabelGap = 15;
     let lastLabelX = -Infinity;
 
-    // Draw minor/mid/major ticks
     for(let i=0;i<=max;i+=minorStep){
-      const x = (i/max) * 100;
+      const xPct = (i/max) * 100;
 
       const tick = document.createElement('div');
       tick.className = 'subq-tick min';
-      tick.style.left = `calc(${x}% - 0.5px)`;
+      tick.style.left = `calc(${xPct}% - 0.5px)`;
 
+      // mid ticks: only U-100 at 5s that aren't majors
       if (max===100 && i%5===0 && i%10!==0) tick.className = 'subq-tick mid';
-      if (i%majorStep===0) tick.className = 'subq-tick maj';
+
+      // major ticks: values present in labelSet
+      if (labelSet.includes(i)) tick.className = 'subq-tick maj';
 
       subqTicks.appendChild(tick);
 
-      // Labels:
-      // - U-100 at 10s
-      // - U-50/U-30 at majors (every 5)
-      const showNumber = (max===100) ? (i%10===0) : (i%majorStep===0);
-      if (showNumber){
+      // Labels only at entries in labelSet (with anti-overlap)
+      if (labelSet.includes(i)){
         const xPx = i * pxPerUnit;
-        if (xPx - lastLabelX >= minLabelGap || i===0){
+        if (xPx - lastLabelX >= minLabelGap || i === 0){
           const lab = document.createElement('div');
           lab.className = 'subq-num';
-          lab.style.left = (x) + '%';
+          lab.style.left = xPct + '%';
           lab.textContent = String(i);
           subqTicks.appendChild(lab);
           lastLabelX = xPx;
@@ -497,13 +508,17 @@ document.addEventListener('DOMContentLoaded', () => {
     fill.style.width=pct+'%';
     cursor.style.left=`calc(${pct}% - 1px)`;
 
-    // Warnings
-    warnEl.textContent=''; warnEl.classList.remove('warn');
-    if(!Number.isFinite(units)){
-      warnEl.textContent='Enter positive values for vial mg, diluent mL, and dose.';
-    }else if(units>maxUnits){
-      warnEl.textContent=`⚠️ Dose exceeds the selected syringe scale of ${maxUnits} units.`; warnEl.classList.add('warn');
-    }
+    // Warnings (both tabs)
+    const warnTextBase = (!Number.isFinite(units))
+      ? 'Enter positive values for vial mg, diluent mL, and dose.'
+      : (units>maxUnits)
+        ? `⚠️ Dose exceeds the selected syringe scale of ${maxUnits} units.`
+        : '';
+
+    [warnSubq, warnClassic].forEach(el=>{
+      el.textContent = warnTextBase;
+      el.classList.toggle('warn', !!(units>maxUnits));
+    });
   }
 
   // Wire presets
@@ -568,7 +583,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const pct = (n)=>Math.max(0,Math.min(100,n));
 
   let L=getVar('--b-left',15), R=getVar('--b-right',19), T=getVar('--b-top',46.5), H=getVar('--b-height',13);
-  let S=getVar('--barrel-shift',0); // px
+  let S=parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--barrel-shift'))||0; // px
   const stepPct=0.25, stepPx=1;
 
   const refreshHUD=()=>{
